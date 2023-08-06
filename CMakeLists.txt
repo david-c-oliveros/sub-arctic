@@ -23,6 +23,7 @@ add_executable(${PROJECT_NAME}
     src/model.cpp
     src/mesh.cpp
     src/shader.cpp
+    src/object.cpp
     )
 
 add_subdirectory(external/glfw)

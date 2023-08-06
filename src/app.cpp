@@ -42,56 +42,19 @@ void App::run()
 
         process_input(window);
 
-        // First Pass
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-        glEnable(GL_DEPTH_TEST);
-
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
         // Model/View/Projection transformations
-        shader->use();
+        shader.use();
         glm::mat4 model = glm::mat4(1.0f);
         glm::mat4 view = camera.get_view_matrix();
         glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float)screen_width / (float)screen_height, 0.1f, 100.0f);
-        shader->set_mat4("projection", projection);
-        shader->set_mat4("view", view);
+        shader.set_mat4("projection", projection);
+        shader.set_mat4("view", view);
 
-        // Render
-
-        // Cubes
-        glBindVertexArray(cubeVAO);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, cube_texture);
-        model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
-        shader->set_mat4("model", model);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
-        shader->set_mat4("model", model);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
-
-        // Floor
-        glBindVertexArray(planeVAO);
-        glBindTexture(GL_TEXTURE_2D, cube_texture);
-        shader->set_mat4("model", glm::mat4(1.0f));
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        glBindVertexArray(0);
-
-
-        // Second Pass
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glDisable(GL_DEPTH_TEST);
-
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        screen_shader->use();
-        glBindVertexArray(quadVAO);
-        glBindTexture(GL_TEXTURE_2D, texture_colorbuffer);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        backpack->draw(shader);
 
 
         glfwSwapBuffers(window);
@@ -151,8 +114,7 @@ bool App::gl_config()
 void App::load_shaders()
 {
     // Build and compile shaders
-    shader = std::make_shared<Shader>("../../shaders/advanced_glsl_vs.shader", "../../shaders/red_fs.shader");
-    screen_shader = std::make_shared<Shader>("../../shaders/framebuffer_vs.shader", "../../shaders/framebuffer_fs.shader");
+    shader.create("../../shaders/tex_vs.shader", "../../shaders/tex_fs.shader");
 }
 
 
@@ -193,10 +155,10 @@ void App::load_models()
     unsigned int grass_texture = texture_from_file("blending_transparent_window.png", "../../res");
 
     // Load models
-    //Model our_model("../../res/backpack/backpack.obj");
+    backpack = std::make_shared<Object>("../../res/backpack/backpack.obj");
 
-    shader->use();
-    shader->set_int("texture1", 0);
+    shader.use();
+    shader.set_int("texture1", 0);
 }
 
 

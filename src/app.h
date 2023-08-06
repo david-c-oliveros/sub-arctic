@@ -17,6 +17,7 @@
 #include "shader.h"
 #include "camera.h"
 #include "model.h"
+#include "object.h"
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -31,8 +32,9 @@ class App
         int screen_width;
         int screen_height;
 
-        std::shared_ptr<Shader> shader;
-        std::shared_ptr<Shader> screen_shader;
+        Shader shader;
+
+        std::shared_ptr<Object> backpack;
 
         unsigned int cubeVAO;
         unsigned int planeVAO;

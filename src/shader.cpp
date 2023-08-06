@@ -2,7 +2,20 @@
 
 
 
-Shader::Shader(const char* vertex_path, const char* fragment_path)
+Shader::Shader()
+{
+}
+
+
+
+Shader::~Shader()
+{
+    glDeleteProgram(id);
+}
+
+
+
+void Shader::create(const char* vertex_path, const char* fragment_path)
 {
     // 1. Retrieve the vertex/fragment source code from file_path
     std::string vertex_code;
@@ -13,6 +26,7 @@ Shader::Shader(const char* vertex_path, const char* fragment_path)
     // Ensure ifstream objects can throw exceptions:
     v_shader_file.exceptions (std::ifstream::failbit | std::ifstream::badbit);
     f_shader_file.exceptions (std::ifstream::failbit | std::ifstream::badbit);
+
     try
     {
         // Open files
