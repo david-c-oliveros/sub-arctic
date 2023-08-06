@@ -15,7 +15,9 @@ project(App)
 
 find_package(GLEW REQUIRED)
 
-add_executable(${PROJECT_NAME} src/main.cpp
+add_executable(${PROJECT_NAME}
+    src/main.cpp
+    src/app.cpp
     src/stb_image.cpp
     src/camera.cpp
     src/model.cpp
