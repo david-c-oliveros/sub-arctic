@@ -49,7 +49,7 @@ void App::update()
     delta_time = current_frame - last_frame;
     last_frame = current_frame;
 
-    ship->rot_angles.x = 100 * glfwGetTime();
+    //ship->rot_angles.z = 100 * glfwGetTime();
     ship->update();
 
     process_input(window, ship, move_speed, background);
@@ -182,10 +182,11 @@ void App::load_models()
     //backpack = std::make_shared<Object>("../../res/backpack/backpack.obj");
 
     glm::vec3 pos(0.0f);
-    glm::vec3 rot(0.0f, 0.0f, 0.0f);
+    glm::vec3 rot(0.0f, -90.0f, 0.0f);
 
     stbi_set_flip_vertically_on_load(false);
-    ship = std::make_shared<Player>("../../res/vehicles/fighter/fighter.obj", pos, rot, 1.0, true);
+    //ship = std::make_shared<Player>("../../res/vehicles/fighter/fighter.obj", pos, rot, 1.0, true);
+    ship = std::make_shared<Player>("../../res/vehicles/submarine/sub3/sub_v03.obj", pos, rot, 0.2, true);
     stbi_set_flip_vertically_on_load(true);
 
     rot = glm::vec3(0.0f);

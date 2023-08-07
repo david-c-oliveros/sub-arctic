@@ -48,7 +48,7 @@ class App
         int screen_width;
         int screen_height;
 
-        float move_speed = 0.2;
+        float move_speed = 0.03;
 
         Shader shader;
 

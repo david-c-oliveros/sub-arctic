@@ -10,6 +10,7 @@ Player::Player(std::shared_ptr<Model> _model_mesh,
     : Object(_model_mesh, _pos, _rot_angles, _scale, _is_player, _up)
 {
     input_dir = Movement::NONE;
+    neutral_pos = glm::vec3(_pos);
 }
 
 Player::Player(const char* model_path,
@@ -20,6 +21,7 @@ Player::Player(const char* model_path,
     : Object(model_path, _pos, _rot_angles, _scale, _is_player, _up)
 {
     input_dir = Movement::NONE;
+    neutral_pos = glm::vec3(_pos);
 }
 
 
@@ -32,20 +34,28 @@ Player::~Player()
 
 void Player::update()
 {
+    apply_drag();
     pos += vel;
 
     switch (input_dir)
     {
         case Movement::NONE:
-            rot_angles.x = 0.0f;
+            rot_angles.z = neutral_pos.z;
             break;
 
         case Movement::UP:
-            rot_angles.x = 30.0f;
+            rot_angles.z = neutral_pos.z + 10.0f;
             break;
 
         case Movement::DOWN:
-            rot_angles.x = -30.0f;
+            rot_angles.z = neutral_pos.z - 10.0f;
             break;
     }
+}
+
+
+
+void Player::apply_drag()
+{
+    vel += -vel * 0.01f;
 }

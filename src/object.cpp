@@ -45,9 +45,6 @@ void Object::create(std::shared_ptr<Model> _model_mesh, glm::vec3 _pos, float _r
 
 void Object::update()
 {
-    if (is_player)
-        pos += vel;
-
 }
 
 
@@ -57,8 +54,6 @@ void Object::draw(Shader &shader)
     glm::mat4 model = glm::mat4(1.0f);
 
     model = glm::translate(model, pos);
-    model = glm::rotate(model, glm::radians(rot_angles.x), front);
-    model = glm::rotate(model, glm::radians(rot_angles.y), up);
     model = glm::rotate(model, glm::radians(rot_angles.z), right);
     model = glm::scale(model , glm::vec3(scale, scale, scale));
 

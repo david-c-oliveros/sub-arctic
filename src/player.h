@@ -1,6 +1,8 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
+#include <glm/gtx/string_cast.hpp>
+
 #include "object.h"
 
 
@@ -33,10 +35,15 @@ class Player : public Object
         ~Player();
 
         void update();
+        void apply_drag();
 
 
     public:
         Movement input_dir;
+
+
+    private:
+        glm::vec3 neutral_pos;
 };
 
 
