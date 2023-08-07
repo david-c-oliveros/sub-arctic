@@ -2,11 +2,11 @@
 
 
 
-Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures)
+Mesh::Mesh(std::vector<Vertex> _vertices, std::vector<unsigned int> _indices, std::vector<Texture> _textures)
 {
-    this->vertices = vertices;
-    this->indices  = indices;
-    this->textures = textures;
+    vertices = _vertices;
+    indices  = _indices;
+    textures = _textures;
 
     setup_mesh();
 }
@@ -40,7 +40,10 @@ void Mesh::draw(Shader &shader)
 
         // Now set the sampler to the correct texture unit
         //glUniform1i(glGetUniformLocation(shader.id, (name + number).c_str()), i);
-        shader.set_float(("material" + name + number).c_str(), i);
+        //shader.set_float(("material." + name + number).c_str(), i);
+        shader.set_float((name + number).c_str(), i);
+        //std::cout << name << " " << textures[i].path << std::endl;
+        //std::cout << name << " " << number << std::endl;
 
         // And finally bind the texture
         glBindTexture(GL_TEXTURE_2D, textures[i].id);

@@ -2,7 +2,7 @@
 
 
 
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 50.0f));
 float delta_time = 0.0f;
 float last_frame = 0.0f;
 bool first_mouse = true;
@@ -32,35 +32,58 @@ bool App::create()
 
 void App::run()
 {
-    // Wireframe
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     while (!glfwWindowShouldClose(window))
     {
-        float current_frame = static_cast<float>(glfwGetTime());
-        delta_time = current_frame - last_frame;
-        last_frame = current_frame;
-
-        process_input(window);
-
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
-        // Model/View/Projection transformations
-        shader.use();
-        glm::mat4 model = glm::mat4(1.0f);
-        glm::mat4 view = camera.get_view_matrix();
-        glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float)screen_width / (float)screen_height, 0.1f, 100.0f);
-        shader.set_mat4("projection", projection);
-        shader.set_mat4("view", view);
-
-        backpack->draw(shader);
-
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+        update();
+        render();
     }
+
     glfwTerminate();
+}
+
+
+
+void App::update()
+{
+    float current_frame = static_cast<float>(glfwGetTime());
+    delta_time = current_frame - last_frame;
+    last_frame = current_frame;
+
+    ship->rot_angles.x = 100 * glfwGetTime();
+    ship->update();
+
+    process_input(window, ship, move_speed, background);
+}
+
+
+
+void App::render()
+{
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+    /*******************************************/
+    /*                                         */
+    /*        Model / View / Projection        */
+    /*                                         */
+    /*******************************************/
+    shader.use();
+    glm::mat4 model = glm::mat4(1.0f);
+    glm::mat4 view = camera.get_view_matrix();
+    glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float)screen_width / (float)screen_height, 0.1f, 1000.0f);
+    shader.set_mat4("projection", projection);
+    shader.set_mat4("view", view);
+
+
+    /****************************/
+    /*        Draw Calls        */
+    /****************************/
+    background->draw(shader);
+    ship->draw(shader);
+
+    glfwSwapBuffers(window);
+    glfwPollEvents();
 }
 
 
@@ -87,6 +110,7 @@ bool App::gl_config()
     glfwSetScrollCallback(window, scroll_callback);
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetKeyCallback(window, key_callback);
 
     if (glewInit() != GLEW_OK)
     {
@@ -114,7 +138,12 @@ bool App::gl_config()
 void App::load_shaders()
 {
     // Build and compile shaders
+//    shader.create("../../shaders/multiple_lights_vs.shader", "../../shaders/multiple_lights_fs.shader");
     shader.create("../../shaders/tex_vs.shader", "../../shaders/tex_fs.shader");
+    //shader.set_vec3("dir_light.direction", glm::vec3(0.5f, 0.5f, 0.0f));
+    //shader.set_vec3("dir_light.ambient", glm::vec3(0.05f, 0.05f, 0.05f));
+    //shader.set_vec3("dir_light.diffuse", glm::vec3(0.4f, 0.4f, 0.4f));
+    //shader.set_vec3("dir_light.specular", glm::vec3(0.5f, 0.5f, 0.5f));
 }
 
 
@@ -149,37 +178,71 @@ void App::init_framebuffer()
 
 void App::load_models()
 {
-    // load textures
-    // -------------
-    unsigned int cube_texture  = texture_from_file("container.jpg", "../../res");
-    unsigned int grass_texture = texture_from_file("blending_transparent_window.png", "../../res");
-
     // Load models
-    backpack = std::make_shared<Object>("../../res/backpack/backpack.obj");
+    //backpack = std::make_shared<Object>("../../res/backpack/backpack.obj");
 
-    shader.use();
-    shader.set_int("texture1", 0);
+    glm::vec3 pos(0.0f);
+    glm::vec3 rot(0.0f, 0.0f, 0.0f);
+
+    stbi_set_flip_vertically_on_load(false);
+    ship = std::make_shared<Player>("../../res/vehicles/fighter/fighter.obj", pos, rot, 1.0, true);
+    stbi_set_flip_vertically_on_load(true);
+
+    rot = glm::vec3(0.0f);
+    pos.z = -5.0f;
+    background = std::make_shared<Object>("../../res/environments/backgrounds/space/Blue Nebula/blue_nebula.obj",
+            pos, rot, 10.0f);
 }
 
 
 
-void process_input(GLFWwindow* window)
+void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_speed, std::shared_ptr<Object> background)
 {
+    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
+        background->pos.z -= 0.01;
+    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
+        background->pos.z += 0.01;
+
+    if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
+        camera.position.z -= 0.1;
+    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
+        camera.position.z += 0.1;
+
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera.process_keyboard(FORWARD, delta_time);
+    {
+        ship->input_dir = Movement::UP;
+        ship->vel.y += move_speed * delta_time;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        ship->input_dir = Movement::DOWN;
+        ship->vel.y -= move_speed * delta_time;
+    }
+    else
+    {
+        ship->input_dir = Movement::NONE;
+    }
 
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camera.process_keyboard(BACKWARD, delta_time);
+//    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+//        ship->vel.x -= move_speed * delta_time;
+//
+//    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+//        ship->vel.x += move_speed * delta_time;
+}
 
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camera.process_keyboard(LEFT, delta_time);
 
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        camera.process_keyboard(RIGHT, delta_time);
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+//    if (key == GLFW_KEY_K && action == GLFW_PRESS)
+//    {
+//        ship->rot_angle.x = 0.0f;
+//        ship->rot_angle.z = 0.0f;
+//    }
 }
 
 
@@ -202,7 +265,7 @@ void mouse_callback(GLFWwindow* window, double xpos_in, double ypos_in)
     last_x = xpos;
     last_y = ypos;
 
-    camera.process_mouse_movement(xoffset, yoffset);
+    //camera.process_mouse_movement(xoffset, yoffset);
 }
 
 

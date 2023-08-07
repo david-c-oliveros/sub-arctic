@@ -24,6 +24,7 @@ add_executable(${PROJECT_NAME}
     src/mesh.cpp
     src/shader.cpp
     src/object.cpp
+    src/player.cpp
     src/timer.cpp
     )
 
