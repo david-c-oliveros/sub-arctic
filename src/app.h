@@ -52,6 +52,7 @@ class App
 
         Shader shader;
         Shader bg_shader;
+        Shader ice_shader;
 
         std::shared_ptr<Player> ship;
         std::shared_ptr<Object> background;

@@ -49,7 +49,7 @@ void App::update()
     last_frame = current_frame;
 
     //ship->rot_angles.z = 100 * glfwGetTime();
-    ship->update();
+    ship->update(delta_time);
 
     process_input(window, ship, move_speed, background);
 }
@@ -80,15 +80,24 @@ void App::render()
     bg_shader.set_mat4("view", view);
     bg_shader.set_float("u_time", glfwGetTime()*0.5);
 
+    ice_shader.use();
+    ice_shader.set_mat4("projection", projection);
+    ice_shader.set_mat4("view", view);
+    ice_shader.set_float("u_time", glfwGetTime()*0.5);
+    ice_shader.set_vec3("view_pos", camera.position);
+
 
     /****************************/
     /*        Draw Calls        */
     /****************************/
+    bg_shader.use();
     background->draw(bg_shader);
 
     shader.use();
     ship->draw(shader);
-    iceberg->draw(shader);
+    
+    ice_shader.use();
+    iceberg->draw(ice_shader);
 
 
     glfwSwapBuffers(window);
@@ -150,7 +159,7 @@ void App::load_shaders()
 //    shader.create("../../shaders/tex_vs.shader", "../../shaders/tex_fs.shader");
     shader.create("../../shaders/multiple_lights_vs.shader", "../../shaders/multiple_lights_fs.shader");
     shader.use();
-    shader.set_vec3("dir_light.direction", glm::vec3(0.5f, -0.5f, 0.0f));
+    shader.set_vec3("dir_light.direction", glm::vec3(0.5f, -0.5f, 0.7f));
     shader.set_vec3("dir_light.ambient", glm::vec3(0.0f, 0.0f, 0.0f));
     shader.set_vec3("dir_light.diffuse", glm::vec3(0.4f, 0.4f, 0.5f));
     shader.set_vec3("dir_light.specular", glm::vec3(0.5f, 0.5f, 0.5f));
@@ -158,6 +167,14 @@ void App::load_shaders()
     bg_shader.create("../../shaders/noise_vs.shader", "../../shaders/noise_fs.shader");
     bg_shader.use();
     bg_shader.set_vec2("u_resolution", glm::vec2(screen_width * .4, screen_height * .4));
+
+    ice_shader.create("../../shaders/noise_vs.shader", "../../shaders/ice_fs.shader");
+    ice_shader.use();
+    ice_shader.set_vec3("dir_light.direction", glm::vec3(0.5f, -0.5f, 0.7f));
+    ice_shader.set_vec3("dir_light.ambient", glm::vec3(0.5f, 0.5f, 0.5f));
+    ice_shader.set_vec3("dir_light.diffuse", glm::vec3(0.4f, 0.4f, 0.5f));
+    ice_shader.set_vec3("dir_light.specular", glm::vec3(0.5f, 0.5f, 0.5f));
+    ice_shader.set_vec2("u_resolution", glm::vec2(screen_width * .5, screen_height * .5));
 }
 
 
@@ -208,9 +225,9 @@ void App::load_models()
     background = std::make_shared<Object>("../../res/environments/backgrounds/space/Blue Nebula/blue_nebula.obj",
             pos, rot, 10.0f);
 
-    pos.z = 25.0f;
-    pos.x = 0.0f;
-    iceberg = std::make_shared<Object>("../../res/environments/objects/ice/iceberg_01.obj", pos, rot, 1.0, true);
+    pos.z = -7.0f;
+    pos.x = 15.0f;
+    iceberg = std::make_shared<Object>("../../res/environments/objects/ice/iceberg_01.obj", pos, rot, 8.0, true);
 }
 
 
@@ -235,11 +252,13 @@ void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_
     {
         ship->input_dir = Movement::UP;
         ship->vel.y += move_speed * delta_time;
+        std::cout << ship->rot_angles.z << std::endl;
     }
     else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
     {
         ship->input_dir = Movement::DOWN;
         ship->vel.y -= move_speed * delta_time;
+        std::cout << ship->rot_angles.z << std::endl;
     }
     else
     {

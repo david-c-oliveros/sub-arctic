@@ -32,7 +32,7 @@ Player::~Player()
 
 
 
-void Player::update()
+void Player::update(float delta_time)
 {
     apply_drag();
     pos += vel;
@@ -40,15 +40,17 @@ void Player::update()
     switch (input_dir)
     {
         case Movement::NONE:
-            rot_angles.z = neutral_pos.z;
+            rot_angles.z = glm::mix(rot_angles.z, neutral_pos.z, delta_time);
+            //rot_angles.z = neutral_pos.z;
             break;
 
         case Movement::UP:
-            rot_angles.z = neutral_pos.z + 10.0f;
+            rot_angles.z = glm::mix(rot_angles.z, 10.0f, delta_time);
             break;
 
         case Movement::DOWN:
-            rot_angles.z = neutral_pos.z - 10.0f;
+            rot_angles.z = glm::mix(rot_angles.z, -10.0f, delta_time);
+            //rot_angles.z = neutral_pos.z - 10.0f;
             break;
     }
 }

@@ -1,6 +1,7 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
+#include <cmath>
 #include <glm/gtx/string_cast.hpp>
 
 #include "object.h"
@@ -34,7 +35,7 @@ class Player : public Object
 
         ~Player();
 
-        void update();
+        void update(float delta_time);
         void apply_drag();
 
 

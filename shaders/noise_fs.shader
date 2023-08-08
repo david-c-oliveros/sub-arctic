@@ -43,8 +43,8 @@ float noise(in vec2 _st)
 
 float fbm (vec2 _st)
 {
-    float v = 0.0;
-    float a = 0.5;
+    float value = 0.0;
+    float amplitude = 0.5;
     vec2 shift = vec2(100.0);
 
     mat2 rot = mat2(cos(0.5), sin(0.5),
@@ -52,12 +52,12 @@ float fbm (vec2 _st)
 
     for (int i = 0; i < NUM_OCTAVES; ++i)
     {
-        v += a * noise(_st);
+        value += amplitude * noise(_st);
         _st = rot * _st * 2.0 + shift;
-        a *= 0.5;
+        amplitude *= 0.5;
     }
 
-    return v;
+    return value;
 }
 
 
@@ -89,6 +89,17 @@ void main()
     color = mix(color,
                 vec3(0.666667, 1, 1),
                 clamp(length(r.x), 0.0, 1.0));
+
+//    vec2 qp = vec2(0.0);
+//    vec2 rp = vec2(0.0);
+//
+//    qp.x = fbm(st + vec2(0.0, 0.0));
+//    qp.y = fbm(st + vec2(5.2, 1.3));
+//
+//    rp.x = fbm(st + 4.0*q + vec2(1.7, 9.2));
+//    rp.y = fbm(st + 4.0*q + vec2(8.3, 2.8));
+//
+//    float re = fbm(st + 4.0*r);
 
     frag_color = vec4((f*f*f + .1*f*f + .1*f) * color, 1.);
 }
