@@ -67,21 +67,30 @@ void App::render()
     /*        Model / View / Projection        */
     /*                                         */
     /*******************************************/
-    shader.use();
-    glm::mat4 model = glm::mat4(1.0f);
     glm::mat4 view = camera.get_view_matrix();
     glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float)screen_width / (float)screen_height, 0.1f, 1000.0f);
+
+    shader.use();
     shader.set_mat4("projection", projection);
     shader.set_mat4("view", view);
-
     shader.set_vec3("view_pos", camera.position);
+
+    bg_shader.use();
+    bg_shader.set_mat4("projection", projection);
+    bg_shader.set_mat4("view", view);
+    float time_offset = abs(sin(glfwGetTime()));
+    std::cout << "\r" << time_offset << std::flush;
+    bg_shader.set_float("u_time", time_offset);
 
 
     /****************************/
     /*        Draw Calls        */
     /****************************/
-    background->draw(shader);
+    background->draw(bg_shader);
+
+    shader.use();
     ship->draw(shader);
+
 
     glfwSwapBuffers(window);
     glfwPollEvents();
@@ -146,6 +155,10 @@ void App::load_shaders()
     shader.set_vec3("dir_light.ambient", glm::vec3(0.05f, 0.05f, 0.05f));
     shader.set_vec3("dir_light.diffuse", glm::vec3(1.4f, 1.4f, 1.4f));
     shader.set_vec3("dir_light.specular", glm::vec3(0.5f, 0.5f, 0.5f));
+
+    bg_shader.create("../../shaders/noise_vs.shader", "../../shaders/noise_fs.shader");
+    bg_shader.use();
+    bg_shader.set_vec2("u_resolution", glm::vec2(screen_width, screen_height));
 }
 
 

@@ -51,6 +51,7 @@ class App
         float move_speed = 0.03;
 
         Shader shader;
+        Shader bg_shader;
 
         std::shared_ptr<Player> ship;
         std::shared_ptr<Object> backpack;
