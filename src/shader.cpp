@@ -102,7 +102,9 @@ void Shader::set_bool(const std::string &name, bool value) const
 
 void Shader::set_int(const std::string &name, int value) const
 {
+    //std::cout << name << std::endl;
     glUniform1i(glGetUniformLocation(id, name.c_str()), value);
+    //glUniform1i(glGetUniformLocation(id, "re1"), value);
 }
 
 // ------------------------------------------------------------------------

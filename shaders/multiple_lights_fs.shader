@@ -58,11 +58,11 @@ in vec3 frag_pos;
 in vec3 normal;
 in vec2 tex_coords;
 
+uniform Material material;
 uniform vec3 view_pos;
 uniform Dir_Light dir_light;
-uniform Point_Light point_lights[NR_POINT_LIGHTS];
-uniform Spot_Light spot_light;
-uniform Material material;
+//uniform Point_Light point_lights[NR_POINT_LIGHTS];
+//uniform Spot_Light spot_light;
 
 
 vec3 calc_dir_light(Dir_Light light, vec3 normal, vec3 view_dir);
@@ -77,15 +77,6 @@ void main()
 
     // Phase 1: Directional Lighting
     vec3 result = calc_dir_light(dir_light, norm, view_dir);
-
-    // Phase 2: Point Lights
-    for (int i = 0; i < NR_POINT_LIGHTS; i++)
-    {
-        result += calc_point_light(point_lights[i], norm, frag_pos, view_dir);
-    }
-
-    // Phase 3: Spot Light
-    result += calc_spot_light(spot_light, norm, frag_pos, view_dir);
 
     frag_color = vec4(result, 1.0);
 }

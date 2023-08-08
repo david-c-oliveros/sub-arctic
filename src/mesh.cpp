@@ -29,9 +29,9 @@ void Mesh::draw(Shader &shader)
         std::string number;
         std::string name = textures[i].type;
 
-        if (name == "texture_diffuse")
+        if (name == "diffuse")
             number = std::to_string(diffuse_nr++);  // Transfer unsigned int to string
-        else if (name == "texture_specular")
+        else if (name == "specular")
             number = std::to_string(specular_nr++); // Transfer unsigned int to string
         else if (name == "texture_normal")
             number = std::to_string(normal_nr++);   // Transfer unsigned int to string
@@ -39,11 +39,9 @@ void Mesh::draw(Shader &shader)
             number = std::to_string(height_nr++);   // Transfer unsigned int to string
 
         // Now set the sampler to the correct texture unit
-        //glUniform1i(glGetUniformLocation(shader.id, (name + number).c_str()), i);
-        //shader.set_float(("material." + name + number).c_str(), i);
-        shader.set_float((name + number).c_str(), i);
-        //std::cout << name << " " << textures[i].path << std::endl;
-        //std::cout << name << " " << number << std::endl;
+        glUniform1i(glGetUniformLocation(shader.id, (name + number).c_str()), i);
+        //shader.set_int(name + number, i);
+        //shader.set_int("material." + name, i); 
 
         // And finally bind the texture
         glBindTexture(GL_TEXTURE_2D, textures[i].id);
