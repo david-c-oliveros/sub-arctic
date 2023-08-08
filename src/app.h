@@ -54,8 +54,8 @@ class App
         Shader bg_shader;
 
         std::shared_ptr<Player> ship;
-        std::shared_ptr<Object> backpack;
         std::shared_ptr<Object> background;
+        std::shared_ptr<Object> iceberg;
 
         unsigned int cubeVAO;
         unsigned int planeVAO;

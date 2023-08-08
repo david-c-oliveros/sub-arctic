@@ -23,7 +23,7 @@ float random(vec2 _st)
 float noise(in vec2 _st)
 {
     vec2 i = floor(_st);
-    vec2 f = floor(_st);
+    vec2 f = fract(_st);
 
     float a = random(i);
     float b = random(i + vec2(1.0, 0.0));
@@ -63,15 +63,16 @@ float fbm (vec2 _st)
 
 void main()
 {
-    vec2 st = frag_pos.xy/u_resolution.xy*3;
+    vec2 st = gl_FragCoord.xy/u_resolution.xy*3;
+    //st += st * abs(sin(u_time*0.1)*3.0);
 
     vec3 color = vec3(0.0);
 
-    vec2 q = vec2(0.0);
+    vec2 q = vec2(0.);
     q.x = fbm(st + 0.00*u_time);
     q.y = fbm(st + vec2(1.0));
 
-    vec2 r = vec2(0.0);
+    vec2 r = vec2(0.);
     r.x = fbm(st + 1.0*q + vec2(1.7, 9.2) + 0.15*u_time);
     r.y = fbm(st + 1.0*q + vec2(8.3, 2.8) + 0.126*u_time);
 
@@ -89,18 +90,5 @@ void main()
                 vec3(0.666667, 1, 1),
                 clamp(length(r.x), 0.0, 1.0));
 
-    vec3 debug;
-    if (isnan(f))
-        debug = vec3(0.0, 0.0, 0.5);
-    else if (f == 0.0)
-        debug = vec3(0.5, 0.0, 0.0);
-    else if (f < 0.0)
-        debug = vec3(0.0, 0.5, 0.0);
-    else if (f > 0.0)
-        debug = vec3(0.5, 0.0, 0.5);
-    else
-        debug = vec3(0.0);
-
-    //frag_color = vec4(vec3(u_time), 1.0);
-    frag_color = vec4((f*f*f + 0.6*f*f + 0.5*f) * color, 1.0);
+    frag_color = vec4((f*f*f + .1*f*f + .1*f) * color, 1.);
 }

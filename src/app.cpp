@@ -78,9 +78,7 @@ void App::render()
     bg_shader.use();
     bg_shader.set_mat4("projection", projection);
     bg_shader.set_mat4("view", view);
-    float time_offset = abs(sin(glfwGetTime()));
-    std::cout << "\r" << time_offset << std::flush;
-    bg_shader.set_float("u_time", time_offset);
+    bg_shader.set_float("u_time", glfwGetTime()*0.5);
 
 
     /****************************/
@@ -90,6 +88,7 @@ void App::render()
 
     shader.use();
     ship->draw(shader);
+    iceberg->draw(shader);
 
 
     glfwSwapBuffers(window);
@@ -152,13 +151,13 @@ void App::load_shaders()
     shader.create("../../shaders/multiple_lights_vs.shader", "../../shaders/multiple_lights_fs.shader");
     shader.use();
     shader.set_vec3("dir_light.direction", glm::vec3(0.5f, -0.5f, 0.0f));
-    shader.set_vec3("dir_light.ambient", glm::vec3(0.05f, 0.05f, 0.05f));
-    shader.set_vec3("dir_light.diffuse", glm::vec3(1.4f, 1.4f, 1.4f));
+    shader.set_vec3("dir_light.ambient", glm::vec3(0.0f, 0.0f, 0.0f));
+    shader.set_vec3("dir_light.diffuse", glm::vec3(0.4f, 0.4f, 0.5f));
     shader.set_vec3("dir_light.specular", glm::vec3(0.5f, 0.5f, 0.5f));
 
     bg_shader.create("../../shaders/noise_vs.shader", "../../shaders/noise_fs.shader");
     bg_shader.use();
-    bg_shader.set_vec2("u_resolution", glm::vec2(screen_width, screen_height));
+    bg_shader.set_vec2("u_resolution", glm::vec2(screen_width * .4, screen_height * .4));
 }
 
 
@@ -205,9 +204,13 @@ void App::load_models()
     stbi_set_flip_vertically_on_load(true);
 
     rot = glm::vec3(0.0f);
-    pos.z = -5.0f;
+    pos.z = -50.0f;
     background = std::make_shared<Object>("../../res/environments/backgrounds/space/Blue Nebula/blue_nebula.obj",
             pos, rot, 10.0f);
+
+    pos.z = 25.0f;
+    pos.x = 0.0f;
+    iceberg = std::make_shared<Object>("../../res/environments/objects/ice/iceberg_01.obj", pos, rot, 1.0, true);
 }
 
 
