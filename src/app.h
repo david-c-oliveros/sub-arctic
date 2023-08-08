@@ -14,6 +14,7 @@
 #include <glm/gtx/string_cast.hpp>
 
 #include "stb_image.h"
+#include "miniaudio.h"
 
 #include "shader.h"
 #include "camera.h"
@@ -25,8 +26,11 @@
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos_in, double ypos_in);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_speed, std::shared_ptr<Object> background);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
+void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_speed,
+                   std::shared_ptr<Object> background, ma_engine audio_engine);
+
 
 class App
 {
@@ -67,6 +71,7 @@ class App
         unsigned int framebuffer;
         unsigned int texture_colorbuffer;
         unsigned int rbo;
+
 };
 
 

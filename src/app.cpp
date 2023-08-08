@@ -1,5 +1,16 @@
+#define MINIAUDIO_IMPLEMENTATION
+
 #include "app.h"
 
+
+const char* music  = "../../res/audio/music_spooky_ambience.wav";
+const char* charge = "../../res/audio/FreeSFX/Voices/Nightmare Mode.wav";
+
+/***************************/
+/*        MiniAudio        */
+/***************************/
+ma_result ma_init_result;
+ma_engine audio_engine;
 
 
 Camera camera(glm::vec3(0.0f, 0.0f, 50.0f));
@@ -31,11 +42,19 @@ bool App::create()
 
 void App::run()
 {
+    ma_init_result = ma_engine_init(NULL, &audio_engine);
+    if (ma_init_result != MA_SUCCESS)
+        std::cout << "ERROR::MINIAUDIO\n";
+
+    ma_engine_play_sound(&audio_engine, music, NULL);
+
     while (!glfwWindowShouldClose(window))
     {
         update();
         render();
     }
+
+    ma_engine_uninit(&audio_engine);
 
     glfwTerminate();
 }
@@ -48,10 +67,16 @@ void App::update()
     delta_time = current_frame - last_frame;
     last_frame = current_frame;
 
-    //ship->rot_angles.z = 100 * glfwGetTime();
+//    if ((int)glfwGetTime() % 3 == 0)
+//    {
+//        std::cout << "Fire!" << std::endl;
+//        ma_engine_play_sound(&audio_engine, charge, NULL);
+//    }
+
+
     ship->update(delta_time);
 
-    process_input(window, ship, move_speed, background);
+    process_input(window, ship, move_speed, background, audio_engine);
 }
 
 
@@ -153,6 +178,7 @@ bool App::gl_config()
 }
 
 
+
 void App::load_shaders()
 {
     // Build and compile shaders
@@ -232,7 +258,8 @@ void App::load_models()
 
 
 
-void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_speed, std::shared_ptr<Object> background)
+void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_speed,
+                   std::shared_ptr<Object> background, ma_engine audio_engine)
 {
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
         background->pos.z -= 0.01;
@@ -252,35 +279,26 @@ void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_
     {
         ship->input_dir = Movement::UP;
         ship->vel.y += move_speed * delta_time;
-        std::cout << ship->rot_angles.z << std::endl;
     }
     else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
     {
         ship->input_dir = Movement::DOWN;
         ship->vel.y -= move_speed * delta_time;
-        std::cout << ship->rot_angles.z << std::endl;
     }
     else
     {
         ship->input_dir = Movement::NONE;
     }
-
-//    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-//        ship->vel.x -= move_speed * delta_time;
-//
-//    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-//        ship->vel.x += move_speed * delta_time;
 }
 
 
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-//    if (key == GLFW_KEY_K && action == GLFW_PRESS)
-//    {
-//        ship->rot_angle.x = 0.0f;
-//        ship->rot_angle.z = 0.0f;
-//    }
+    if (key == GLFW_KEY_K && action == GLFW_PRESS)
+    {
+        ma_engine_play_sound(&audio_engine, charge, NULL);
+    }
 }
 
 

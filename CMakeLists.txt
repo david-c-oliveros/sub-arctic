@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.23.3)
+cmake_minimum_required(VERSION 2.23.3)
 
-add_compile_options(-Wfatal-errors -w -g)
+add_compile_options(-Wfatal-errors -w -g -lpthread -lm -ldl)
 
 #find_package(OpenGL REQUIRED COMPONENTS OpenGL)
 find_package(OpenGL)
@@ -37,6 +37,7 @@ target_include_directories(${PROJECT_NAME}
     #    PUBLIC external/imgui
     PUBLIC external/glm
     PUBLIC external/assimp/include
+    PUBLIC external/audio/SFML-2.6.0/include
     )
 
 target_link_directories(${PROJECT_NAME}
