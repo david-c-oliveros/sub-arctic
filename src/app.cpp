@@ -78,7 +78,7 @@ void App::update()
     ocean_floor->update(0.3f, delta_time);
 
     for (auto &iceberg : icebergs)
-        iceberg->update(1.0f, delta_time);
+        iceberg->update(2.0f, delta_time);
 
     process_input(window, ship, move_speed, ocean_floor, audio_engine);
 }
@@ -117,7 +117,7 @@ void App::render()
 
 
     /****************************/
-    /*        Draw Calls        */
+    /*        Draw calls        */
     /****************************/
     bg_shader.use();
     background->draw(bg_shader);
@@ -125,9 +125,12 @@ void App::render()
     shader.use();
     ship->draw(shader);
     
-    ice_shader.use();
     //ocean_surface->draw(ice_shader);
+
+    ice_shader.use();
     ocean_floor->draw(ice_shader);
+
+    ice_shader.use();
     for (auto &iceberg : icebergs)
         iceberg->draw(ice_shader);
 
@@ -187,6 +190,7 @@ bool App::gl_config()
 
 void App::load_shaders()
 {
+    glm::vec3 fog_color = glm::vec3(0.0f, 0.01f, 0.1f);
     // Build and compile shaders
 //    shader.create("../../shaders/tex_vs.shader", "../../shaders/tex_fs.shader");
     shader.create("../../shaders/multiple_lights_vs.shader", "../../shaders/multiple_lights_fs.shader");
@@ -195,11 +199,13 @@ void App::load_shaders()
     shader.set_vec3("dir_light.ambient", glm::vec3(0.0f, 0.0f, 0.0f));
     shader.set_vec3("dir_light.diffuse", glm::vec3(0.4f, 0.4f, 0.5f));
     shader.set_vec3("dir_light.specular", glm::vec3(0.5f, 0.5f, 0.5f));
-    shader.set_vec3("fog_color", glm::vec3(0.0f, 0.01f, 0.02f));
+    shader.set_vec3("fog_color", fog_color);
 
     bg_shader.create("../../shaders/noise_vs.shader", "../../shaders/noise_fs.shader");
     bg_shader.use();
     bg_shader.set_vec2("u_resolution", glm::vec2(screen_width * .4, screen_height * .4));
+
+    debug_shader.create("../../shaders/tex_vs.shader", "../../shaders/tex_fs.shader");
 
     ice_shader.create("../../shaders/ice_vs.shader", "../../shaders/ice_fs.shader");
     ice_shader.use();
@@ -208,7 +214,7 @@ void App::load_shaders()
     ice_shader.set_vec3("dir_light.diffuse", glm::vec3(0.4f, 0.4f, 0.5f));
     ice_shader.set_vec3("dir_light.specular", glm::vec3(0.5f, 0.5f, 0.5f));
     ice_shader.set_vec2("u_resolution", glm::vec2(screen_width * .5, screen_height * .5));
-    ice_shader.set_vec3("fog_color", glm::vec3(0.0f, 0.1f, 0.2f));
+    ice_shader.set_vec3("fog_color", fog_color);
 }
 
 
@@ -282,6 +288,7 @@ void App::load_models()
     glm::vec3 offset = glm::vec3(50.0f, -30.0f, 0.0f);
     icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_01.obj", pos + offset, rot, 10.0, true));
     icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_02.obj", pos, rot, 8.0, true));
+    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_03.obj", pos + glm::vec3(70.0, -30.0f, -7.0f), rot, 8.0, true));
 }
 
 

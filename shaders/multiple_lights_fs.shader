@@ -86,8 +86,8 @@ void main()
     float d = distance(camera_eye, vertex);
     float alpha = fog_factor(d);
 
-    result *= mix(result, fog_color, alpha);
-    result *= 2.8;
+//    result *= mix(result, fog_color, alpha);
+//    result *= 2.8;
 
     frag_color = vec4(result, 1.0);
 }

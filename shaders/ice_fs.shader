@@ -28,6 +28,7 @@ uniform vec3 view_pos;
 uniform vec3 fog_color;
 
 in vec3 frag_pos;
+in vec3 frag_world;
 in vec3 normal;
 in vec2 tex_coords;
 in vec4 vertex;
@@ -37,8 +38,9 @@ in vec4 vertex_world;
 #define NUM_OCTAVES 5
 
 
-vec3 calc_dir_light(Dir_Light light, vec3 normal, vec3 view_dir);
+vec3 calc_dir_light(Dir_Light light, vec3 normal, vec3 view_dir, vec3 noise);
 vec3 generate_noise();
+vec3 generate_noise3();
 float fbm (vec2 _st);
 float random(vec2 _st);
 float fog_factor(float d);
@@ -50,23 +52,24 @@ void main()
     vec3 norm = normalize(normal);
     vec3 view_dir = normalize(view_pos - frag_pos);
 
-    // Phase 1: Directional Lighting
-    vec3 result = calc_dir_light(dir_light, norm, view_dir);
-    result += vec3(0.0, 0.12, 0.15);
-    result += vec3(0.7, 0.7, 0.3) * generate_noise();
-    
+    vec3 noise = generate_noise();
+    vec3 result = calc_dir_light(dir_light, norm, view_dir, noise);
+    //result += vec3(0.0, 0.12, 0.15);
+    //result += vec3(0.7, 0.7, 0.3) * generate_noise();
+    //result *= generate_noise();
+
     vec4 camera_eye = vec4(view_pos, 1.0);
     float d = distance(camera_eye, vertex);
     float alpha = fog_factor(d);
 
-    result *= mix(result, fog_color, alpha);
+    result = mix(result, fog_color, alpha);
 
     frag_color = vec4(result, 1.0);
 }
 
 
 
-vec3 calc_dir_light(Dir_Light light, vec3 normal, vec3 view_dir)
+vec3 calc_dir_light(Dir_Light light, vec3 normal, vec3 view_dir, vec3 noise)
 {
     vec3 light_dir = normalize(-light.direction);
 
@@ -74,13 +77,14 @@ vec3 calc_dir_light(Dir_Light light, vec3 normal, vec3 view_dir)
     float diff = max(dot(normal, light_dir), 0.0);
 
     // Specular Shading
+    float shininess = 32.0;
     vec3 reflect_dir = reflect(-light_dir, normal);
-    float spec = pow(max(dot(view_dir, reflect_dir), 0.0), material.shininess);
+    float spec = pow(max(dot(view_dir, reflect_dir), 0.0), shininess);
 
     // Combine Results
-    vec3 ambient  = light.ambient * vec3(texture(material.diffuse, tex_coords));
-    vec3 diffuse  = light.diffuse * diff * vec3(texture(material.diffuse, tex_coords));
-    vec3 specular = light.specular * spec * vec3(texture(material.diffuse, tex_coords));
+    vec3 ambient  = light.ambient  *        noise;
+    vec3 diffuse  = light.diffuse  * diff * noise;
+    vec3 specular = light.specular * spec * noise;
 
     return ambient + diffuse + specular;
 }
@@ -94,7 +98,7 @@ float random(vec2 _st)
 
 
 
-float noise(in vec2 _st)
+float noise(vec2 _st)
 {
     vec2 i = floor(_st);
     vec2 f = fract(_st);
@@ -135,7 +139,8 @@ float fbm (vec2 _st)
 
 vec3 generate_noise()
 {
-    vec2 st = gl_FragCoord.xy/u_resolution.xy*3;
+    //vec2 st = gl_FragCoord.xy/u_resolution.xy*3;
+    vec2 st = frag_world.xy;
 
     vec3 color = vec3(0.0);
 
@@ -144,8 +149,8 @@ vec3 generate_noise()
     q.y = fbm(st + vec2(1.0));
 
     vec2 r = vec2(0.);
-    r.x = fbm(st + 1.0*q + vec2(1.7, 9.2) + 0.15*u_time);
-    r.y = fbm(st + 1.0*q + vec2(8.3, 2.8) + 0.126*u_time);
+    r.x = fbm(st + 1.0*q + vec2(1.7, 9.2));// + 0.15*u_time);
+    r.y = fbm(st + 1.0*q + vec2(8.3, 2.8));// + 0.126*u_time);
 
     float f = fbm(st);
 
