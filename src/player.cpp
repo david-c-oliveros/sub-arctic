@@ -4,24 +4,24 @@
 
 Player::Player(std::shared_ptr<Model> _model_mesh,
         glm::vec3 _pos,
-        glm::vec3 _rot_angles,
+        float _rot_angle,
         float _scale, bool _is_player,
         glm::vec3 _up)
-    : Object(_model_mesh, _pos, _rot_angles, _scale, _is_player, _up)
+    : Object(_model_mesh, _pos, _rot_angle, _scale, _is_player, _up)
 {
     input_dir = Movement::NONE;
-    neutral_pos = glm::vec3(_pos);
+    neutral_rot = 0.0f;
 }
 
 Player::Player(const char* model_path,
         glm::vec3 _pos,
-        glm::vec3 _rot_angles,
+        float _rot_angle,
         float _scale, bool _is_player,
         glm::vec3 _up)
-    : Object(model_path, _pos, _rot_angles, _scale, _is_player, _up)
+    : Object(model_path, _pos, _rot_angle, _scale, _is_player, _up)
 {
     input_dir = Movement::NONE;
-    neutral_pos = glm::vec3(_pos);
+    neutral_rot = 0.0f;
 }
 
 
@@ -40,15 +40,15 @@ void Player::update(float delta_time)
     switch (input_dir)
     {
         case Movement::NONE:
-            rot_angles.z = glm::mix(rot_angles.z, neutral_pos.z, delta_time);
+            rot_angle = glm::mix(rot_angle, neutral_rot, delta_time * 0.5f);
             break;
 
         case Movement::UP:
-            rot_angles.z = glm::mix(rot_angles.z, 10.0f, delta_time);
+            rot_angle = glm::mix(rot_angle, max_rot, delta_time * 0.2f);
             break;
 
         case Movement::DOWN:
-            rot_angles.z = glm::mix(rot_angles.z, -10.0f, delta_time);
+            rot_angle = glm::mix(rot_angle, -max_rot, delta_time * 0.2f);
             break;
     }
 }

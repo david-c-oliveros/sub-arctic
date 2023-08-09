@@ -3,7 +3,7 @@
 
 int main()
 {
-    App app(2000, 2000);
+    App app(2000, 1500);
 
     if (app.create())
     {

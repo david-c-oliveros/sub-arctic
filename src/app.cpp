@@ -11,9 +11,10 @@ const char* charge = "../../res/audio/FreeSFX/Voices/Nightmare Mode.wav";
 /***************************/
 ma_result ma_init_result;
 ma_engine audio_engine;
+ma_sound bg_music;
 
 
-Camera camera(glm::vec3(0.0f, 0.0f, 50.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 40.0f));
 float delta_time = 0.0f;
 float last_frame = 0.0f;
 bool first_mouse = true;
@@ -46,7 +47,12 @@ void App::run()
     if (ma_init_result != MA_SUCCESS)
         std::cout << "ERROR::MINIAUDIO\n";
 
-    ma_engine_play_sound(&audio_engine, music, NULL);
+    ma_init_result = ma_sound_init_from_file(&audio_engine, music, 0, NULL, NULL, &bg_music);
+    if (ma_init_result != MA_SUCCESS)
+        std::cout << "ERROR::MINIAUDIO\n";
+
+    ma_sound_set_looping(&bg_music, true);
+    ma_sound_start(&bg_music);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -67,16 +73,14 @@ void App::update()
     delta_time = current_frame - last_frame;
     last_frame = current_frame;
 
-//    if ((int)glfwGetTime() % 3 == 0)
-//    {
-//        std::cout << "Fire!" << std::endl;
-//        ma_engine_play_sound(&audio_engine, charge, NULL);
-//    }
-
-
     ship->update(delta_time);
 
-    process_input(window, ship, move_speed, background, audio_engine);
+    ocean_floor->update(0.3f, delta_time);
+
+    for (auto &iceberg : icebergs)
+        iceberg->update(1.0f, delta_time);
+
+    process_input(window, ship, move_speed, ocean_floor, audio_engine);
 }
 
 
@@ -93,7 +97,7 @@ void App::render()
     /*                                         */
     /*******************************************/
     glm::mat4 view = camera.get_view_matrix();
-    glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float)screen_width / (float)screen_height, 0.1f, 1000.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float)screen_width / (float)screen_height, 0.1f, 10000.0f);
 
     shader.use();
     shader.set_mat4("projection", projection);
@@ -122,8 +126,10 @@ void App::render()
     ship->draw(shader);
     
     ice_shader.use();
-    iceberg->draw(ice_shader);
-
+    //ocean_surface->draw(ice_shader);
+    ocean_floor->draw(ice_shader);
+    for (auto &iceberg : icebergs)
+        iceberg->draw(ice_shader);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
@@ -161,7 +167,7 @@ bool App::gl_config()
         return false;
     }
 
-    stbi_set_flip_vertically_on_load(true);
+    stbi_set_flip_vertically_on_load(false);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_PROGRAM_POINT_SIZE);
@@ -189,18 +195,20 @@ void App::load_shaders()
     shader.set_vec3("dir_light.ambient", glm::vec3(0.0f, 0.0f, 0.0f));
     shader.set_vec3("dir_light.diffuse", glm::vec3(0.4f, 0.4f, 0.5f));
     shader.set_vec3("dir_light.specular", glm::vec3(0.5f, 0.5f, 0.5f));
+    shader.set_vec3("fog_color", glm::vec3(0.0f, 0.01f, 0.02f));
 
     bg_shader.create("../../shaders/noise_vs.shader", "../../shaders/noise_fs.shader");
     bg_shader.use();
     bg_shader.set_vec2("u_resolution", glm::vec2(screen_width * .4, screen_height * .4));
 
-    ice_shader.create("../../shaders/noise_vs.shader", "../../shaders/ice_fs.shader");
+    ice_shader.create("../../shaders/ice_vs.shader", "../../shaders/ice_fs.shader");
     ice_shader.use();
     ice_shader.set_vec3("dir_light.direction", glm::vec3(0.5f, -0.5f, 0.7f));
     ice_shader.set_vec3("dir_light.ambient", glm::vec3(0.5f, 0.5f, 0.5f));
     ice_shader.set_vec3("dir_light.diffuse", glm::vec3(0.4f, 0.4f, 0.5f));
     ice_shader.set_vec3("dir_light.specular", glm::vec3(0.5f, 0.5f, 0.5f));
     ice_shader.set_vec2("u_resolution", glm::vec2(screen_width * .5, screen_height * .5));
+    ice_shader.set_vec3("fog_color", glm::vec3(0.0f, 0.1f, 0.2f));
 }
 
 
@@ -235,25 +243,45 @@ void App::init_framebuffer()
 
 void App::load_models()
 {
-    // Load models
-    //backpack = std::make_shared<Object>("../../res/backpack/backpack.obj");
-
     glm::vec3 pos(0.0f);
-    glm::vec3 rot(0.0f, -90.0f, 0.0f);
+    float rot = 0.0f;
 
-    stbi_set_flip_vertically_on_load(false);
-    //ship = std::make_shared<Player>("../../res/vehicles/fighter/fighter.obj", pos, rot, 1.0, true);
+    /***************************/
+    /*        Submarine        */
+    /***************************/
     ship = std::make_shared<Player>("../../res/vehicles/submarine/sub3/sub_v03.obj", pos, rot, 0.2, true);
-    stbi_set_flip_vertically_on_load(true);
 
-    rot = glm::vec3(0.0f);
+    /**************************/
+    /*        Backdrop        */
+    /**************************/
     pos.z = -50.0f;
-    background = std::make_shared<Object>("../../res/environments/backgrounds/space/Blue Nebula/blue_nebula.obj",
-            pos, rot, 10.0f);
+    background = std::make_shared<Object>("../../res/environments/backgrounds/ocean/long_quad.obj", pos, rot, 1.0f);
 
+    /*******************************/
+    /*        Ocean Surface        */
+    /*****************************/
+    pos.x = 0.0f;
+    pos.y = 25.0f;
+    pos.z = 0.0f;
+    ocean_surface = std::make_shared<Object>("../../res/environments/backgrounds/ocean/surface.obj", pos, rot, 1.0, true);
+
+    /*****************************/
+    /*        Ocean Floor        */
+    /*****************************/
+    pos.x = 180.0f;
+    pos.y = -45.0f;
+    pos.z = -45.0f;
+    ocean_floor = std::make_shared<Object>("../../res/environments/objects/ice/undersea_mountains_01.obj", pos, rot, 30.0, true);
+
+    /**************************/
+    /*        Icebergs        */
+    /**************************/
     pos.z = -7.0f;
     pos.x = 15.0f;
-    iceberg = std::make_shared<Object>("../../res/environments/objects/ice/iceberg_01.obj", pos, rot, 8.0, true);
+    pos.y = 20.0f;
+    glm::vec3 offset = glm::vec3(50.0f, -30.0f, 0.0f);
+    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_01.obj", pos + offset, rot, 10.0, true));
+    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_02.obj", pos, rot, 8.0, true));
 }
 
 
@@ -262,14 +290,14 @@ void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_
                    std::shared_ptr<Object> background, ma_engine audio_engine)
 {
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
-        background->pos.z -= 0.01;
+        camera.position.x -= 1.0;
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
-        background->pos.z += 0.01;
+        camera.position.x += 1.0;
 
     if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
-        camera.position.z -= 0.1;
+        camera.position.z -= 2.5;
     if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
-        camera.position.z += 0.1;
+        camera.position.z += 2.5;
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
@@ -277,13 +305,13 @@ void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
     {
-        ship->input_dir = Movement::UP;
-        ship->vel.y += move_speed * delta_time;
+        ship->input_dir = Movement::DOWN;
+        ship->vel.y -= move_speed * delta_time;
     }
     else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
     {
-        ship->input_dir = Movement::DOWN;
-        ship->vel.y -= move_speed * delta_time;
+        ship->input_dir = Movement::UP;
+        ship->vel.y += move_speed * delta_time;
     }
     else
     {
@@ -295,10 +323,10 @@ void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (key == GLFW_KEY_K && action == GLFW_PRESS)
-    {
-        ma_engine_play_sound(&audio_engine, charge, NULL);
-    }
+    //if (key == GLFW_KEY_K && action == GLFW_PRESS)
+    //{
+    //    ma_engine_play_sound(&audio_engine, charge, NULL);
+    //}
 }
 
 

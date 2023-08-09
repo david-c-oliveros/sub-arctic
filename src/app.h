@@ -60,7 +60,9 @@ class App
 
         std::shared_ptr<Player> ship;
         std::shared_ptr<Object> background;
-        std::shared_ptr<Object> iceberg;
+        std::shared_ptr<Object> ocean_surface;
+        std::shared_ptr<Object> ocean_floor;
+        std::vector<std::shared_ptr<Object>> icebergs;
 
         unsigned int cubeVAO;
         unsigned int planeVAO;

@@ -57,7 +57,9 @@ struct Spot_Light
 in vec3 frag_pos;
 in vec3 normal;
 in vec2 tex_coords;
+in vec4 vertex;
 
+uniform vec3 fog_color;
 uniform Material material;
 uniform vec3 view_pos;
 uniform Dir_Light dir_light;
@@ -68,6 +70,7 @@ uniform Dir_Light dir_light;
 vec3 calc_dir_light(Dir_Light light, vec3 normal, vec3 view_dir);
 vec3 calc_point_light(Point_Light light, vec3 normal, vec3 frag_pos, vec3 view_dir);
 vec3 calc_spot_light(Spot_Light light, vec3 normal, vec3 frag_pos, vec3 view_dir);
+float fog_factor(float d);
 
 void main()
 {
@@ -77,6 +80,14 @@ void main()
 
     // Phase 1: Directional Lighting
     vec3 result = calc_dir_light(dir_light, norm, view_dir);
+    result += vec3(0.0, 0.05, 0.1);
+
+    vec4 camera_eye = vec4(view_pos, 1.0);
+    float d = distance(camera_eye, vertex);
+    float alpha = fog_factor(d);
+
+    result *= mix(result, fog_color, alpha);
+    result *= 2.8;
 
     frag_color = vec4(result, 1.0);
 }
@@ -161,4 +172,20 @@ vec3 calc_spot_light(Spot_Light light, vec3 normal, vec3 frag_pos, vec3 view_dir
     specular *= attenuation * intensity;
 
     return ambient + diffuse + specular;
+}
+
+
+
+float fog_factor(float d)
+{
+    const float fog_max = 200.0;
+    const float fog_min = 90.0;
+
+    if (d >= fog_max)
+        return 1.;
+
+    if (d <= fog_min)
+        return 0.;
+
+    return 1 - (fog_max - d) / (fog_max - fog_min);
 }

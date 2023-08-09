@@ -23,13 +23,13 @@ class Player : public Object
         Player();
         Player(std::shared_ptr<Model> _model_mesh,
                 glm::vec3 _pos = glm::vec3(0.0f, 0.0f, 0.0f),
-                glm::vec3 _rot_angles = glm::vec3(0.0f, 0.0f, 0.0f),
+                float _rot_angle = 0.0f,
                 float _scale = 1.0f, bool _is_player = false,
                 glm::vec3 _up = glm::vec3(0.0f, 1.0f, 0.0f));
 
         Player(const char* model_path,
                 glm::vec3 _pos = glm::vec3(0.0f, 0.0f, 0.0f),
-                glm::vec3 _rot_angles = glm::vec3(0.0f, 0.0f, 0.0f),
+                float _rot_angle = 0.0f,
                 float _scale = 1.0f, bool _is_player = false,
                 glm::vec3 _up = glm::vec3(0.0f, 1.0f, 0.0f));
 
@@ -44,7 +44,8 @@ class Player : public Object
 
 
     private:
-        glm::vec3 neutral_pos;
+        float neutral_rot;
+        float max_rot = 20.0f;
 };
 
 

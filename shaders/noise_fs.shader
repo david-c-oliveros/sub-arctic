@@ -43,8 +43,8 @@ float noise(in vec2 _st)
 
 float fbm (vec2 _st)
 {
-    float value = 0.0;
-    float amplitude = 0.5;
+    float value = 0.1;
+    float amplitude = 0.3;
     vec2 shift = vec2(100.0);
 
     mat2 rot = mat2(cos(0.5), sin(0.5),
@@ -53,7 +53,7 @@ float fbm (vec2 _st)
     for (int i = 0; i < NUM_OCTAVES; ++i)
     {
         value += amplitude * noise(_st);
-        _st = rot * _st * 2.0 + shift;
+        _st = rot * _st * 3.0 + shift;
         amplitude *= 0.5;
     }
 
@@ -66,7 +66,7 @@ void main()
     vec2 st = gl_FragCoord.xy/u_resolution.xy*3;
     //st += st * abs(sin(u_time*0.1)*3.0);
 
-    vec3 color = vec3(0.0);
+    vec3 color = vec3(0.0, 0.0, 0.01);
 
     vec2 q = vec2(0.);
     q.x = fbm(st + 0.00*u_time);
@@ -74,7 +74,7 @@ void main()
 
     vec2 r = vec2(0.);
     r.x = fbm(st + 1.0*q + vec2(1.7, 9.2) + 0.15*u_time);
-    r.y = fbm(st + 1.0*q + vec2(8.3, 2.8) + 0.126*u_time);
+    r.y = fbm(st + 1.0*q + vec2(2.3, 2.8) + 0.126*u_time);
 
     float f = fbm(st + r);
 
@@ -101,5 +101,6 @@ void main()
 //
 //    float re = fbm(st + 4.0*r);
 
-    frag_color = vec4((f*f*f + .1*f*f + .1*f) * color, 1.);
+    color *= vec3(1.0, 1.3, 1.8);
+    frag_color = vec4((f*f*f + .004*f*f + .3*f) * color, 1.);
 }
