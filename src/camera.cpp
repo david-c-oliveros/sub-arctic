@@ -9,7 +9,9 @@ Camera::Camera(glm::vec3 _position, glm::vec3 _up, float _yaw, float _pitch)
     world_up = _up;
     yaw      = _yaw;
     pitch    = _pitch;
+    debug = false;
     update_camera_vectors();
+    update_debug_vectors();
 }
 
 
@@ -21,13 +23,18 @@ Camera::Camera(float pos_x, float pos_y, float pos_z, float up_x, float up_y, fl
     world_up = glm::vec3(up_x, up_y, up_z);
     yaw      = _yaw;
     pitch    = _pitch;
+    debug = false;
     update_camera_vectors();
+    update_debug_vectors();
 }
 
 
 
 glm::mat4 Camera::get_view_matrix()
 {
+    if (debug)
+        return glm::lookAt(debug_pos, debug_pos + debug_front, debug_up);
+
     return glm::lookAt(position, position + front, up);
 }
 
@@ -35,15 +42,15 @@ glm::mat4 Camera::get_view_matrix()
 
 void Camera::process_keyboard(Camera_Movement direction, float delta_time)
 {
-    float velocity = movement_speed * delta_time;
+    float velocity = 100.0f * delta_time;
     if (direction == UP)
-        position += world_up * velocity;
+        debug_pos += debug_front * velocity;
     if (direction == DOWN)
-        position -= world_up * velocity;
+        debug_pos -= debug_front * velocity;
     if (direction == LEFT)
-        position -= right * velocity;
+        debug_pos -= debug_right * velocity;
     if (direction == RIGHT)
-        position += right * velocity;
+        debug_pos += debug_right * velocity;
 }
 
 
@@ -53,18 +60,19 @@ void Camera::process_mouse_movement(float xoffset, float yoffset, GLboolean cons
     xoffset *= mouse_sensitivity;
     yoffset *= mouse_sensitivity;
 
-    yaw   += xoffset;
-    pitch += yoffset;
+    debug_yaw   += xoffset;
+    debug_pitch += yoffset;
 
     if (constrain_pitch)
     {
-        if (pitch >  89.0f)
-            pitch =  89.0f;
-        if (pitch < -89.0f)
-            pitch = -89.0f;
+        if (debug_pitch >  89.0f)
+            debug_pitch =  89.0f;
+        if (debug_pitch < -89.0f)
+            debug_pitch = -89.0f;
     }
 
     update_camera_vectors();
+    update_debug_vectors();
 }
 
 
@@ -90,4 +98,19 @@ void Camera::update_camera_vectors()
 
     right = glm::normalize(glm::cross(front, world_up));
     up    = glm::normalize(glm::cross(right, front));
+}
+
+
+
+
+void Camera::update_debug_vectors()
+{
+    glm::vec3 new_front;
+    new_front.x = cos(glm::radians(debug_yaw)) * cos(glm::radians(debug_pitch));
+    new_front.y = sin(glm::radians(debug_pitch));
+    new_front.z = sin(glm::radians(debug_yaw)) * cos(glm::radians(debug_pitch));
+    debug_front = glm::normalize(new_front);
+
+    debug_right = glm::normalize(glm::cross(debug_front, world_up));
+    debug_up    = glm::normalize(glm::cross(debug_right, debug_front));
 }

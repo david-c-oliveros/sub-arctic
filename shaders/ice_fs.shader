@@ -40,7 +40,6 @@ in vec4 vertex_world;
 
 vec3 calc_dir_light(Dir_Light light, vec3 normal, vec3 view_dir, vec3 noise);
 vec3 generate_noise();
-vec3 generate_noise3();
 float fbm (vec2 _st);
 float random(vec2 _st);
 float fog_factor(float d);
@@ -55,11 +54,10 @@ void main()
     vec3 noise = generate_noise();
     vec3 result = calc_dir_light(dir_light, norm, view_dir, noise);
     //result += vec3(0.0, 0.12, 0.15);
-    //result += vec3(0.7, 0.7, 0.3) * generate_noise();
     //result *= generate_noise();
 
     vec4 camera_eye = vec4(view_pos, 1.0);
-    float d = distance(camera_eye, vertex);
+    float d = distance(camera_eye, vec4(frag_pos, 1.0));
     float alpha = fog_factor(d);
 
     result = mix(result, fog_color, alpha);
@@ -173,7 +171,7 @@ vec3 generate_noise()
 
 float fog_factor(float d)
 {
-    const float fog_max = 70.0;
+    const float fog_max = 180.0;
     const float fog_min = 10.0;
 
     if (d >= fog_max)

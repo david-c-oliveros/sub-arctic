@@ -21,6 +21,8 @@ bool first_mouse = true;
 float last_x = 0.0f;
 float last_y = 0.0f;
 
+bool DEBUG = false;
+
 
 
 App::App(int _screen_width, int _screen_height)
@@ -108,6 +110,7 @@ void App::render()
     bg_shader.set_mat4("projection", projection);
     bg_shader.set_mat4("view", view);
     bg_shader.set_float("u_time", glfwGetTime()*0.5);
+    bg_shader.set_vec3("view_pos", camera.position);
 
     ice_shader.use();
     ice_shader.set_mat4("projection", projection);
@@ -191,8 +194,7 @@ bool App::gl_config()
 void App::load_shaders()
 {
     glm::vec3 fog_color = glm::vec3(0.0f, 0.01f, 0.1f);
-    // Build and compile shaders
-//    shader.create("../../shaders/tex_vs.shader", "../../shaders/tex_fs.shader");
+
     shader.create("../../shaders/multiple_lights_vs.shader", "../../shaders/multiple_lights_fs.shader");
     shader.use();
     shader.set_vec3("dir_light.direction", glm::vec3(0.5f, -0.5f, 0.7f));
@@ -204,6 +206,7 @@ void App::load_shaders()
     bg_shader.create("../../shaders/noise_vs.shader", "../../shaders/noise_fs.shader");
     bg_shader.use();
     bg_shader.set_vec2("u_resolution", glm::vec2(screen_width * .4, screen_height * .4));
+    bg_shader.set_vec3("fog_color", fog_color);
 
     debug_shader.create("../../shaders/tex_vs.shader", "../../shaders/tex_fs.shader");
 
@@ -260,8 +263,8 @@ void App::load_models()
     /**************************/
     /*        Backdrop        */
     /**************************/
-    pos.z = -50.0f;
-    background = std::make_shared<Object>("../../res/environments/backgrounds/ocean/long_quad.obj", pos, rot, 1.0f);
+    pos.z = -100.0f;
+    background = std::make_shared<Object>("../../res/environments/backgrounds/ocean/long_quad_25d.obj", pos, rot, 1.0f);
 
     /*******************************/
     /*        Ocean Surface        */
@@ -276,19 +279,20 @@ void App::load_models()
     /*****************************/
     pos.x = 180.0f;
     pos.y = -45.0f;
-    pos.z = -45.0f;
+    pos.z = -60.0f;
     ocean_floor = std::make_shared<Object>("../../res/environments/objects/ice/undersea_mountains_01.obj", pos, rot, 30.0, true);
 
     /**************************/
     /*        Icebergs        */
     /**************************/
     pos.z = -7.0f;
-    pos.x = 15.0f;
+    pos.x = 50.0f;
     pos.y = 20.0f;
     glm::vec3 offset = glm::vec3(50.0f, -30.0f, 0.0f);
     icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_01.obj", pos + offset, rot, 10.0, true));
-    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_02.obj", pos, rot, 8.0, true));
-    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_03.obj", pos + glm::vec3(70.0, -30.0f, -7.0f), rot, 8.0, true));
+    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_02.obj", pos + glm::vec3(0.0f, -50.0f, 0.0f), rot, 12.0, true));
+    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_03.obj", pos + glm::vec3(100.0, -30.0f, -7.0f), rot, 8.0, true));
+    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_04.obj", pos + glm::vec3(150.0, 10.0f, -7.0f), rot, 12.0, true));
 }
 
 
@@ -296,6 +300,35 @@ void App::load_models()
 void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_speed,
                    std::shared_ptr<Object> background, ma_engine audio_engine)
 {
+    if (DEBUG)
+    {
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+            camera.process_keyboard(Camera_Movement::UP, delta_time);
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+            camera.process_keyboard(Camera_Movement::DOWN, delta_time);
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+            camera.process_keyboard(Camera_Movement::LEFT, delta_time);
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+            camera.process_keyboard(Camera_Movement::RIGHT, delta_time);
+    }
+    else
+    {
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        {
+            ship->input_dir = Movement::DOWN;
+            ship->vel.y -= move_speed * delta_time;
+        }
+        else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        {
+            ship->input_dir = Movement::UP;
+            ship->vel.y += move_speed * delta_time;
+        }
+        else
+        {
+            ship->input_dir = Movement::NONE;
+        }
+    }
+
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
         camera.position.x -= 1.0;
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
@@ -308,32 +341,17 @@ void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-
-
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    {
-        ship->input_dir = Movement::DOWN;
-        ship->vel.y -= move_speed * delta_time;
-    }
-    else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-    {
-        ship->input_dir = Movement::UP;
-        ship->vel.y += move_speed * delta_time;
-    }
-    else
-    {
-        ship->input_dir = Movement::NONE;
-    }
 }
 
 
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    //if (key == GLFW_KEY_K && action == GLFW_PRESS)
-    //{
-    //    ma_engine_play_sound(&audio_engine, charge, NULL);
-    //}
+    if (key == GLFW_KEY_P && action == GLFW_PRESS)
+    {
+        DEBUG = !DEBUG;
+        camera.debug = !camera.debug;
+    }
 }
 
 
@@ -356,7 +374,7 @@ void mouse_callback(GLFWwindow* window, double xpos_in, double ypos_in)
     last_x = xpos;
     last_y = ypos;
 
-    //camera.process_mouse_movement(xoffset, yoffset);
+    camera.process_mouse_movement(xoffset, yoffset);
 }
 
 

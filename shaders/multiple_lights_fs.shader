@@ -83,11 +83,10 @@ void main()
     result += vec3(0.0, 0.05, 0.1);
 
     vec4 camera_eye = vec4(view_pos, 1.0);
-    float d = distance(camera_eye, vertex);
+    float d = distance(camera_eye, vec4(frag_pos, 1.0));
     float alpha = fog_factor(d);
 
-//    result *= mix(result, fog_color, alpha);
-//    result *= 2.8;
+    result = mix(result, fog_color, alpha);
 
     frag_color = vec4(result, 1.0);
 }
@@ -178,8 +177,8 @@ vec3 calc_spot_light(Spot_Light light, vec3 normal, vec3 frag_pos, vec3 view_dir
 
 float fog_factor(float d)
 {
-    const float fog_max = 200.0;
-    const float fog_min = 90.0;
+    const float fog_max = 180.0;
+    const float fog_min = 10.0;
 
     if (d >= fog_max)
         return 1.;

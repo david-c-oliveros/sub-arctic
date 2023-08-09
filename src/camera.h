@@ -21,7 +21,7 @@ enum Camera_Movement
 const float YAW         = -90.0f;
 const float PITCH       =   0.0f;
 const float SPEED       =   2.5f;
-const float SENSITIVITY =   0.1f;
+const float SENSITIVITY =   0.05f;
 const float ZOOM        =  45.0f;
 
 
@@ -41,6 +41,7 @@ class Camera
         float movement_speed;
         float mouse_sensitivity;
         float zoom;
+        bool debug;
 
 
     public:
@@ -57,6 +58,17 @@ class Camera
 
     private:
         void update_camera_vectors();
+        void update_debug_vectors();
+
+
+    private:
+        glm::vec3 debug_pos = glm::vec3(0.0f, 10.0f, 10.0f);
+        glm::vec3 debug_front;
+        glm::vec3 debug_right;
+        glm::vec3 debug_up;
+
+        float debug_yaw = 0.0f;
+        float debug_pitch = -30.0f;
 };
 
 
