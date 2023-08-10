@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "model.h"
+#include "box_collider.h"
 
 
 
@@ -13,6 +14,7 @@ class Object
         std::shared_ptr<Model> model_mesh;
 
     public:
+        std::shared_ptr<Box_Collider> collider;
         glm::vec3 pos;
         glm::vec3 next_pos;
         glm::vec3 vel;
@@ -38,16 +40,18 @@ class Object
         Object(std::shared_ptr<Model> _model_mesh,
                 glm::vec3 _pos = glm::vec3(0.0f, 0.0f, 0.0f),
                 float _rot_angles = 0.0f,
-                float _scale = 1.0f, bool _is_player = false,
+                float _scale = 1.0f,
+                glm::vec3 collider_dim = glm::vec3(2.0f),
                 glm::vec3 _up = glm::vec3(0.0f, 1.0f, 0.0f));
 
         Object(const char* model_path,
                 glm::vec3 _pos = glm::vec3(0.0f, 0.0f, 0.0f),
                 float _rot_angles = 0.0f,
-                float _scale = 1.0f, bool _is_player = false,
+                float _scale = 1.0f,
+                glm::vec3 collider_dim = glm::vec3(2.0f),
                 glm::vec3 _up = glm::vec3(0.0f, 1.0f, 0.0f));
 
-        void update(float value, float delta_time);
+        void update(glm::vec3 new_vel);
         void draw(Shader &shader);
 };
 

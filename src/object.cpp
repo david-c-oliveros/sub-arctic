@@ -8,8 +8,10 @@ Object::Object()
 
 
 
-Object::Object(std::shared_ptr<Model> _model_mesh, glm::vec3 _pos,float _rot_angle, float _scale, bool _is_player, glm::vec3 _up)
-    : model_mesh(_model_mesh), pos(_pos), rot_angle(_rot_angle), is_player(_is_player), scale(_scale)
+Object::Object(std::shared_ptr<Model> _model_mesh, glm::vec3 _pos,
+               float _rot_angle, float _scale,
+               glm::vec3 collider_dim, glm::vec3 _up)
+    : model_mesh(_model_mesh), pos(_pos), rot_angle(_rot_angle), scale(_scale)
 {
     next_pos = pos;
     vel = glm::vec3(0.0f);
@@ -18,12 +20,15 @@ Object::Object(std::shared_ptr<Model> _model_mesh, glm::vec3 _pos,float _rot_ang
     front = glm::vec3(1.0f, 0.0f, 0.0f);
     right = glm::normalize(glm::cross(front, world_up));
     up    = glm::normalize(glm::cross(right, front));
+    collider = std::make_shared<Box_Collider>(pos, collider_dim);
 }
 
 
 
-Object::Object(const char* model_path, glm::vec3 _pos, float _rot_angle, float _scale, bool _is_player, glm::vec3 _up)
-    : pos(_pos), rot_angle(_rot_angle), is_player(_is_player), scale(_scale)
+Object::Object(const char* model_path, glm::vec3 _pos,
+               float _rot_angle, float _scale,
+               glm::vec3 collider_dim, glm::vec3 _up)
+    : pos(_pos), rot_angle(_rot_angle), scale(_scale)
 {
     model_mesh = std::make_shared<Model>(model_path);
     next_pos = pos;
@@ -33,13 +38,16 @@ Object::Object(const char* model_path, glm::vec3 _pos, float _rot_angle, float _
     front = glm::vec3(1.0f, 0.0f, 0.0f);
     right = glm::normalize(glm::cross(front, world_up));
     up    = glm::normalize(glm::cross(right, front));
+    collider = std::make_shared<Box_Collider>(pos, collider_dim);
 }
 
 
 
-void Object::update(float value, float delta_time)
+void Object::update(glm::vec3 new_vel)
 {
-    pos.x -= value * delta_time;
+    vel = new_vel;
+    pos += vel;
+    collider->update_pos(pos);
 }
 
 

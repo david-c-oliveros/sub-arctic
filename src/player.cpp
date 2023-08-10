@@ -5,9 +5,10 @@
 Player::Player(std::shared_ptr<Model> _model_mesh,
         glm::vec3 _pos,
         float _rot_angle,
-        float _scale, bool _is_player,
-        glm::vec3 _up)
-    : Object(_model_mesh, _pos, _rot_angle, _scale, _is_player, _up)
+        float _scale,
+        glm::vec3 _up,
+        glm::vec3 collider_dim)
+    : Object(_model_mesh, _pos, _rot_angle, _scale, _up, collider_dim)
 {
     input_dir = Movement::NONE;
     neutral_rot = 0.0f;
@@ -16,9 +17,10 @@ Player::Player(std::shared_ptr<Model> _model_mesh,
 Player::Player(const char* model_path,
         glm::vec3 _pos,
         float _rot_angle,
-        float _scale, bool _is_player,
-        glm::vec3 _up)
-    : Object(model_path, _pos, _rot_angle, _scale, _is_player, _up)
+        float _scale,
+        glm::vec3 _up,
+        glm::vec3 collider_dim)
+    : Object(model_path, _pos, _rot_angle, _scale, _up, collider_dim)
 {
     input_dir = Movement::NONE;
     neutral_rot = 0.0f;
@@ -51,6 +53,7 @@ void Player::update(float delta_time)
             rot_angle = glm::mix(rot_angle, -max_rot, delta_time * 0.2f);
             break;
     }
+    collider->update_pos(pos);
 }
 
 

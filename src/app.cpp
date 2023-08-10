@@ -75,14 +75,35 @@ void App::update()
     delta_time = current_frame - last_frame;
     last_frame = current_frame;
 
-    ship->update(delta_time);
-
-    ocean_floor->update(0.3f, delta_time);
-
-    for (auto &iceberg : icebergs)
-        iceberg->update(2.0f, delta_time);
-
     process_input(window, ship, move_speed, ocean_floor, audio_engine);
+
+    /**********************************/
+    /*        Check Collisions        */
+    /**********************************/
+    for (auto &iceberg : icebergs)
+    {
+        if (Box_Collider::aabb_collide(iceberg->collider, ship->collider))
+        {
+            std::cout << "collision\n";
+        }
+        else if (Box_Collider::aabb_collide(debug_cube->collider, ship->collider))
+        {
+            std::cout << "collision\n";
+        }
+    }
+
+
+    /********************************/
+    /*        Update Objects        */
+    /********************************/
+    glm::vec3 iceberg_vel     = glm::vec3(-2.0f, 0.0f, 0.0f) * delta_time;
+    glm::vec3 ocean_floor_vel = glm::vec3(-0.3f, 0.0f, 0.0f) * delta_time;
+
+    ship->update(delta_time);
+    debug_cube->update(iceberg_vel);
+    ocean_floor->update(ocean_floor_vel);
+    for (auto &iceberg : icebergs)
+        iceberg->update(iceberg_vel);
 }
 
 
@@ -127,6 +148,7 @@ void App::render()
 
     shader.use();
     ship->draw(shader);
+    debug_cube->draw(shader);
     
     //ocean_surface->draw(ice_shader);
 
@@ -258,7 +280,13 @@ void App::load_models()
     /***************************/
     /*        Submarine        */
     /***************************/
-    ship = std::make_shared<Player>("../../res/vehicles/submarine/sub3/sub_v03.obj", pos, rot, 0.2, true);
+    ship = std::make_shared<Player>("../../res/vehicles/submarine/sub3/sub_v03.obj", pos, rot, 0.2, glm::vec3(18.0f, 2.0f, 2.0f));
+
+    /****************************/
+    /*        Debug Cube        */
+    /****************************/
+    glm::vec3 tmp = glm::vec3(40.0f, 0.0f, 0.0f);
+    debug_cube = std::make_shared<Object>("../../res/environments/backgrounds/ocean/cube.obj", pos + tmp, rot, 1.0f, glm::vec3(20.0f));
 
     /**************************/
     /*        Backdrop        */
@@ -272,7 +300,7 @@ void App::load_models()
     pos.x = 0.0f;
     pos.y = 25.0f;
     pos.z = 0.0f;
-    ocean_surface = std::make_shared<Object>("../../res/environments/backgrounds/ocean/surface.obj", pos, rot, 1.0, true);
+    ocean_surface = std::make_shared<Object>("../../res/environments/backgrounds/ocean/surface.obj", pos, rot, 1.0);
 
     /*****************************/
     /*        Ocean Floor        */
@@ -280,7 +308,7 @@ void App::load_models()
     pos.x = 180.0f;
     pos.y = -45.0f;
     pos.z = -60.0f;
-    ocean_floor = std::make_shared<Object>("../../res/environments/objects/ice/undersea_mountains_01.obj", pos, rot, 30.0, true);
+    ocean_floor = std::make_shared<Object>("../../res/environments/objects/ice/undersea_mountains_01.obj", pos, rot, 30.0);
 
     /**************************/
     /*        Icebergs        */
@@ -289,10 +317,10 @@ void App::load_models()
     pos.x = 50.0f;
     pos.y = 20.0f;
     glm::vec3 offset = glm::vec3(50.0f, -30.0f, 0.0f);
-    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_01.obj", pos + offset, rot, 10.0, true));
-    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_02.obj", pos + glm::vec3(0.0f, -50.0f, 0.0f), rot, 12.0, true));
-    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_03.obj", pos + glm::vec3(100.0, -30.0f, -7.0f), rot, 8.0, true));
-    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_04.obj", pos + glm::vec3(150.0, 10.0f, -7.0f), rot, 12.0, true));
+    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_01.obj", pos + offset, rot, 10.0));
+    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_02.obj", pos + glm::vec3(0.0f, -50.0f, 0.0f), rot, 12.0));
+    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_03.obj", pos + glm::vec3(100.0, -30.0f, -7.0f), rot, 8.0));
+    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_04.obj", pos + glm::vec3(150.0, 10.0f, -7.0f), rot, 12.0));
 }
 
 

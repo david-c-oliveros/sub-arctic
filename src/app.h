@@ -21,6 +21,7 @@
 #include "model.h"
 #include "object.h"
 #include "player.h"
+#include "box_collider.h"
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -63,6 +64,7 @@ class App
         std::shared_ptr<Object> background;
         std::shared_ptr<Object> ocean_surface;
         std::shared_ptr<Object> ocean_floor;
+        std::shared_ptr<Object> debug_cube;
         std::vector<std::shared_ptr<Object>> icebergs;
 
         unsigned int cubeVAO;
