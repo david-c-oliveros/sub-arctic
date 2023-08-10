@@ -86,10 +86,6 @@ void App::update()
         {
             std::cout << "collision\n";
         }
-        else if (Box_Collider::aabb_collide(debug_cube->collider, ship->collider))
-        {
-            std::cout << "collision\n";
-        }
     }
 
 
@@ -100,7 +96,6 @@ void App::update()
     glm::vec3 ocean_floor_vel = glm::vec3(-0.3f, 0.0f, 0.0f) * delta_time;
 
     ship->update(delta_time);
-    debug_cube->update(iceberg_vel);
     ocean_floor->update(ocean_floor_vel);
     for (auto &iceberg : icebergs)
         iceberg->update(iceberg_vel);
@@ -148,7 +143,6 @@ void App::render()
 
     shader.use();
     ship->draw(shader);
-    debug_cube->draw(shader);
     
     //ocean_surface->draw(ice_shader);
 
@@ -314,13 +308,16 @@ void App::load_models()
     /*        Icebergs        */
     /**************************/
     pos.z = -7.0f;
-    pos.x = 50.0f;
+    pos.x = 0.0f;
     pos.y = 20.0f;
     glm::vec3 offset = glm::vec3(50.0f, -30.0f, 0.0f);
-    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_01.obj", pos + offset, rot, 10.0));
-    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_02.obj", pos + glm::vec3(0.0f, -50.0f, 0.0f), rot, 12.0));
-    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_03.obj", pos + glm::vec3(100.0, -30.0f, -7.0f), rot, 8.0));
-    icebergs.push_back(std::make_shared<Object>("../../res/environments/objects/ice/iceberg_04.obj", pos + glm::vec3(150.0, 10.0f, -7.0f), rot, 12.0));
+    int num_icebergs = 4;
+    for (int i = 0; i < num_icebergs; i++)
+    {
+        std::string path = "../../res/environments/objects/ice/iceberg_0" + std::to_string(i + 1) + ".obj";
+        icebergs.push_back(std::make_shared<Object>(path, pos + offset, rot, 10.0));
+        offset.x += 50.0f;
+    }
 }
 
 

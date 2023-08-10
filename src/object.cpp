@@ -25,12 +25,12 @@ Object::Object(std::shared_ptr<Model> _model_mesh, glm::vec3 _pos,
 
 
 
-Object::Object(const char* model_path, glm::vec3 _pos,
+Object::Object(std::string model_path, glm::vec3 _pos,
                float _rot_angle, float _scale,
                glm::vec3 collider_dim, glm::vec3 _up)
     : pos(_pos), rot_angle(_rot_angle), scale(_scale)
 {
-    model_mesh = std::make_shared<Model>(model_path);
+    model_mesh = std::make_shared<Model>(model_path.c_str());
     next_pos = pos;
     vel = glm::vec3(0.0f);
     world_up = _up;

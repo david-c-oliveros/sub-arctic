@@ -44,7 +44,7 @@ class Object
                 glm::vec3 collider_dim = glm::vec3(2.0f),
                 glm::vec3 _up = glm::vec3(0.0f, 1.0f, 0.0f));
 
-        Object(const char* model_path,
+        Object(std::string model_path,
                 glm::vec3 _pos = glm::vec3(0.0f, 0.0f, 0.0f),
                 float _rot_angles = 0.0f,
                 float _scale = 1.0f,
