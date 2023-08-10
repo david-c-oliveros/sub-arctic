@@ -335,7 +335,7 @@ void App::load_models()
     pos.y = 20.0f;
     glm::vec3 offset = glm::vec3(50.0f, -30.0f, 0.0f);
     int num_icebergs = 4;
-    std::vector<glm::vec3> iceberg_positions = load_position_data("../../res/environments/objects/iceberg_positions.txt");
+    std::vector<glm::vec3> iceberg_positions = load_position_data("../../res/environments/objects/iceberg_positions_v04.txt");
     for (int i = 0; i < iceberg_positions.size(); i++)
     {
         std::string path = "../../res/environments/objects/ice/iceberg_0" + std::to_string(i + 1) + ".obj";
@@ -420,14 +420,20 @@ void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_
     }
 
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
-        camera.pos.x -= 1.0;
+        camera.pos.x -= 0.5;
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
-        camera.pos.x += 1.0;
+    {
+        camera.pos.x += 0.5;
+        std::cout << glm::to_string(camera.pos) << std::endl;
+    }
 
     if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
-        camera.pos.z -= 2.5;
+    {
+        camera.pos.z -= 1.0;
+        std::cout << glm::to_string(camera.pos) << std::endl;
+    }
     if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
-        camera.pos.z += 2.5;
+        camera.pos.z += 1.0;
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);

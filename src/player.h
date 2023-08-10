@@ -47,7 +47,7 @@ class Player : public Object
 
     private:
         float neutral_rot;
-        float max_rot = 20.0f;
+        float max_rot = 30.0f;
 };
 
 

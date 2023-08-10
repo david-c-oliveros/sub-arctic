@@ -42,15 +42,15 @@ void Player::update(float delta_time)
     switch (input_dir)
     {
         case Movement::NONE:
-            rot_angle = glm::mix(rot_angle, neutral_rot, delta_time * 0.5f);
+            rot_angle = glm::mix(rot_angle, neutral_rot, delta_time * 0.2f);
             break;
 
         case Movement::UP:
-            rot_angle = glm::mix(rot_angle, max_rot, delta_time * 0.2f);
+            rot_angle = glm::mix(rot_angle, max_rot, delta_time * 0.3f);
             break;
 
         case Movement::DOWN:
-            rot_angle = glm::mix(rot_angle, -max_rot, delta_time * 0.2f);
+            rot_angle = glm::mix(rot_angle, -max_rot, delta_time * 0.3f);
             break;
     }
     collider->update_pos(pos);
