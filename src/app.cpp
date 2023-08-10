@@ -120,19 +120,19 @@ void App::render()
     shader.use();
     shader.set_mat4("projection", projection);
     shader.set_mat4("view", view);
-    shader.set_vec3("view_pos", camera.position);
+    shader.set_vec3("view_pos", camera.pos);
 
     bg_shader.use();
     bg_shader.set_mat4("projection", projection);
     bg_shader.set_mat4("view", view);
     bg_shader.set_float("u_time", glfwGetTime()*0.5);
-    bg_shader.set_vec3("view_pos", camera.position);
+    bg_shader.set_vec3("view_pos", camera.pos);
 
     ice_shader.use();
     ice_shader.set_mat4("projection", projection);
     ice_shader.set_mat4("view", view);
     ice_shader.set_float("u_time", glfwGetTime()*0.5);
-    ice_shader.set_vec3("view_pos", camera.position);
+    ice_shader.set_vec3("view_pos", camera.pos);
 
 
     /****************************/
@@ -144,8 +144,6 @@ void App::render()
     shader.use();
     ship->draw(shader);
     
-    //ocean_surface->draw(ice_shader);
-
     ice_shader.use();
     ocean_floor->draw(ice_shader);
 
@@ -217,14 +215,28 @@ void App::load_shaders()
     shader.set_vec3("dir_light.ambient", glm::vec3(0.0f, 0.0f, 0.0f));
     shader.set_vec3("dir_light.diffuse", glm::vec3(0.4f, 0.4f, 0.5f));
     shader.set_vec3("dir_light.specular", glm::vec3(0.5f, 0.5f, 0.5f));
+
+    shader.set_vec3("spot_light.position", 0.0f, 10.0f, 0.0f);
+    shader.set_vec3("spot_light.direction", 0.0f, -1.0f, 0.0f);
+    shader.set_vec3("spot_light.diffuse", 8.0f, 8.0f, 8.0f);
+    shader.set_vec3("spot_light.ambience", 0.0f, 0.0f, 0.0f);
+    shader.set_vec3("spot_light.specular", 1.0f, 1.0f, 1.0f);
+    shader.set_float("spot_light.constant", 1.0f);
+    shader.set_float("spot_light.linear", 0.09f);
+    shader.set_float("spot_light.quadratic", 0.032f);
+    shader.set_float("spot_light.cut_off", glm::cos(glm::radians(5.0)));
+    shader.set_float("spot_light.outer_cut_off", glm::cos(glm::radians(5.0)));
     shader.set_vec3("fog_color", fog_color);
+
 
     bg_shader.create("../../shaders/noise_vs.shader", "../../shaders/noise_fs.shader");
     bg_shader.use();
     bg_shader.set_vec2("u_resolution", glm::vec2(screen_width * .4, screen_height * .4));
     bg_shader.set_vec3("fog_color", fog_color);
 
+
     debug_shader.create("../../shaders/tex_vs.shader", "../../shaders/tex_fs.shader");
+
 
     ice_shader.create("../../shaders/ice_vs.shader", "../../shaders/ice_fs.shader");
     ice_shader.use();
@@ -233,6 +245,17 @@ void App::load_shaders()
     ice_shader.set_vec3("dir_light.diffuse", glm::vec3(0.4f, 0.4f, 0.5f));
     ice_shader.set_vec3("dir_light.specular", glm::vec3(0.5f, 0.5f, 0.5f));
     ice_shader.set_vec2("u_resolution", glm::vec2(screen_width * .5, screen_height * .5));
+
+    ice_shader.set_vec3("spot_light.position", 0.0f, 10.0f, 0.0f);
+    ice_shader.set_vec3("spot_light.direction", 0.0f, -1.0f, 0.0f);
+    ice_shader.set_vec3("spot_light.diffuse", 15.0f, 15.0f, 20.0f);
+    ice_shader.set_vec3("spot_light.ambience", 0.0f, 0.0f, 0.0f);
+    ice_shader.set_vec3("spot_light.specular", 1.0f, 1.0f, 1.0f);
+    ice_shader.set_float("spot_light.constant", 1.0f);
+    ice_shader.set_float("spot_light.linear", 0.09f);
+    ice_shader.set_float("spot_light.quadratic", 0.032f);
+    ice_shader.set_float("spot_light.cut_off", glm::cos(glm::radians(25.0)));
+    ice_shader.set_float("spot_light.outer_cut_off", glm::cos(glm::radians(30.0)));
     ice_shader.set_vec3("fog_color", fog_color);
 }
 
@@ -312,12 +335,54 @@ void App::load_models()
     pos.y = 20.0f;
     glm::vec3 offset = glm::vec3(50.0f, -30.0f, 0.0f);
     int num_icebergs = 4;
-    for (int i = 0; i < num_icebergs; i++)
+    std::vector<glm::vec3> iceberg_positions = load_position_data("../../res/environments/objects/iceberg_positions.txt");
+    for (int i = 0; i < iceberg_positions.size(); i++)
     {
         std::string path = "../../res/environments/objects/ice/iceberg_0" + std::to_string(i + 1) + ".obj";
-        icebergs.push_back(std::make_shared<Object>(path, pos + offset, rot, 10.0));
+        icebergs.push_back(std::make_shared<Object>(path, iceberg_positions[i], rot, 10.0));
         offset.x += 50.0f;
     }
+
+    /***********************/
+    /*        Mines        */
+    /***********************/
+    pos.x = 15.0f;
+    pos.y = 0.0f;
+    mine = std::make_shared<Object>("../../res/environments/objects/mines/naval_mine_v02.obj", pos, rot, 0.7);
+}
+
+
+
+std::vector<glm::vec3> load_position_data(const char* filepath)
+{
+    std::ifstream fin;
+    fin.open(filepath);
+    std::vector<std::string> lines;
+    std::string next_line;
+    glm::vec3 vec;
+    std::vector<glm::vec3> out;
+
+    while(std::getline(fin, next_line, '\n'))
+    {
+        lines.push_back(next_line);
+    }
+
+    for (auto &line : lines)
+    {
+        std::stringstream ss(line);
+        std::string num_str;
+        ss >> num_str;
+        vec.x = std::stof(num_str);
+        ss >> num_str;
+        vec.y = std::stof(num_str);
+        ss >> num_str;
+        vec.z = std::stof(num_str);
+
+        std::cout << glm::to_string(vec) << std::endl;
+        out.push_back(vec);
+    }
+
+    return out;
 }
 
 
@@ -355,14 +420,14 @@ void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_
     }
 
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
-        camera.position.x -= 1.0;
+        camera.pos.x -= 1.0;
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
-        camera.position.x += 1.0;
+        camera.pos.x += 1.0;
 
     if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
-        camera.position.z -= 2.5;
+        camera.pos.z -= 2.5;
     if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
-        camera.position.z += 2.5;
+        camera.pos.z += 2.5;
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);

@@ -64,7 +64,7 @@ uniform Material material;
 uniform vec3 view_pos;
 uniform Dir_Light dir_light;
 //uniform Point_Light point_lights[NR_POINT_LIGHTS];
-//uniform Spot_Light spot_light;
+uniform Spot_Light spot_light;
 
 
 vec3 calc_dir_light(Dir_Light light, vec3 normal, vec3 view_dir);
@@ -80,6 +80,7 @@ void main()
 
     // Phase 1: Directional Lighting
     vec3 result = calc_dir_light(dir_light, norm, view_dir);
+//    result += calc_spot_light(spot_light, norm, frag_pos, view_dir);
     result += vec3(0.0, 0.05, 0.1);
 
     vec4 camera_eye = vec4(view_pos, 1.0);
@@ -141,7 +142,6 @@ vec3 calc_point_light(Point_Light light, vec3 normal, vec3 frag_pos, vec3 view_d
 }
 
 
-// Calculates the color when using a spot light
 vec3 calc_spot_light(Spot_Light light, vec3 normal, vec3 frag_pos, vec3 view_dir)
 {
     vec3 light_dir = normalize(light.position - frag_pos);

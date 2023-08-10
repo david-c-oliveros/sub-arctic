@@ -20,9 +20,27 @@ struct Dir_Light
     vec3 specular;
 };
 
+
+struct Spot_Light
+{
+    vec3 position;
+    vec3 direction;
+    float cutoff;
+    float outer_cutoff;
+
+    float constant;
+    float linear;
+    float quadratic;
+
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+};
+
 uniform vec2 u_resolution;
 uniform float u_time;
 uniform Dir_Light dir_light;
+uniform Spot_Light spot_light;
 uniform Material material;
 uniform vec3 view_pos;
 uniform vec3 fog_color;
@@ -39,6 +57,7 @@ in vec4 vertex_world;
 
 
 vec3 calc_dir_light(Dir_Light light, vec3 normal, vec3 view_dir, vec3 noise);
+vec3 calc_spot_light(Spot_Light light, vec3 normal, vec3 frag_pos, vec3 view_dir, vec3 noise);
 vec3 generate_noise();
 float fbm (vec2 _st);
 float random(vec2 _st);
@@ -53,6 +72,7 @@ void main()
 
     vec3 noise = generate_noise();
     vec3 result = calc_dir_light(dir_light, norm, view_dir, noise);
+//    result += calc_spot_light(spot_light, norm, frag_pos, view_dir, noise);
     //result += vec3(0.0, 0.12, 0.15);
     //result *= generate_noise();
 
@@ -181,4 +201,38 @@ float fog_factor(float d)
         return 0.;
 
     return 1 - (fog_max - d) / (fog_max - fog_min);
+}
+
+
+
+vec3 calc_spot_light(Spot_Light light, vec3 normal, vec3 frag_pos, vec3 view_dir, vec3 noise)
+{
+    vec3 light_dir = normalize(light.position - frag_pos);
+
+    // Diffuse Shading
+    float diff = max(dot(normal, light_dir), 0.0);
+
+    // Specular Shading
+    float shininess = 32.0;
+    vec3 reflect_dir = reflect(-light_dir, normal);
+    float spec = pow(max(dot(view_dir, reflect_dir), 0.0), shininess);
+
+    // Attenuation
+    float distance    = length(light.position - frag_pos);
+    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+
+    // Spotlight Intensity
+    float theta = dot(light_dir, normalize(-light.direction));
+    float epsilon = light.cutoff - light.outer_cutoff;
+    float intensity = clamp((theta - light.outer_cutoff) / epsilon, 0.0, 1.0);
+
+    // Combine Results
+    vec3 ambient  = light.ambient         * noise;
+    vec3 diffuse  = light.diffuse * diff  * noise;
+    vec3 specular = light.specular * spec * noise;
+    ambient  *= attenuation * intensity;
+    diffuse  *= attenuation * intensity;
+    specular *= attenuation * intensity;
+
+    return ambient + diffuse + specular;
 }

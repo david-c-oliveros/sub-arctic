@@ -32,6 +32,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_speed,
                    std::shared_ptr<Object> background, ma_engine audio_engine);
 
+std::vector<glm::vec3> load_position_data(const char* filepath);
+
 
 class App
 {
@@ -65,6 +67,7 @@ class App
         std::shared_ptr<Object> ocean_surface;
         std::shared_ptr<Object> ocean_floor;
         std::shared_ptr<Object> debug_cube;
+        std::shared_ptr<Object> mine;
         std::vector<std::shared_ptr<Object>> icebergs;
 
         unsigned int cubeVAO;

@@ -2,10 +2,10 @@
 
 
 
-Camera::Camera(glm::vec3 _position, glm::vec3 _up, float _yaw, float _pitch)
+Camera::Camera(glm::vec3 _pos, glm::vec3 _up, float _yaw, float _pitch)
     : front(glm::vec3(0.0f, 0.0f, -1.0f)), movement_speed(SPEED), mouse_sensitivity(SENSITIVITY), zoom(ZOOM)
 {
-    position = _position;
+    pos = _pos;
     world_up = _up;
     yaw      = _yaw;
     pitch    = _pitch;
@@ -19,7 +19,7 @@ Camera::Camera(glm::vec3 _position, glm::vec3 _up, float _yaw, float _pitch)
 Camera::Camera(float pos_x, float pos_y, float pos_z, float up_x, float up_y, float up_z, float _yaw, float _pitch)
     : front(glm::vec3(0.0f, 0.0f, -1.0f)), movement_speed(SPEED), mouse_sensitivity(SENSITIVITY), zoom(ZOOM)
 {
-    position = glm::vec3(pos_x, pos_y, pos_z);
+    pos = glm::vec3(pos_x, pos_y, pos_z);
     world_up = glm::vec3(up_x, up_y, up_z);
     yaw      = _yaw;
     pitch    = _pitch;
@@ -35,7 +35,7 @@ glm::mat4 Camera::get_view_matrix()
     if (debug)
         return glm::lookAt(debug_pos, debug_pos + debug_front, debug_up);
 
-    return glm::lookAt(position, position + front, up);
+    return glm::lookAt(pos, pos + front, up);
 }
 
 

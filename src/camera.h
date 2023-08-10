@@ -29,7 +29,7 @@ const float ZOOM        =  45.0f;
 class Camera
 {
     public:
-        glm::vec3 position;
+        glm::vec3 pos;
         glm::vec3 front;
         glm::vec3 up;
         glm::vec3 right;
@@ -43,9 +43,14 @@ class Camera
         float zoom;
         bool debug;
 
+        glm::vec3 debug_pos = glm::vec3(0.0f, 10.0f, 10.0f);
+        glm::vec3 debug_front;
+        glm::vec3 debug_right;
+        glm::vec3 debug_up;
+
 
     public:
-        Camera(glm::vec3 _position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 _up = glm::vec3(0.0f, 1.0f, 0.0f),
+        Camera(glm::vec3 _pos = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 _up = glm::vec3(0.0f, 1.0f, 0.0f),
                float _yaw = YAW, float _pitch = PITCH);
 
         Camera(float pos_x, float pos_y, float pos_z, float up_x, float up_y, float up_z, float _yaw, float _pitch);
@@ -62,10 +67,6 @@ class Camera
 
 
     private:
-        glm::vec3 debug_pos = glm::vec3(0.0f, 10.0f, 10.0f);
-        glm::vec3 debug_front;
-        glm::vec3 debug_right;
-        glm::vec3 debug_up;
 
         float debug_yaw = 0.0f;
         float debug_pitch = -30.0f;
