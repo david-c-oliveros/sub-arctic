@@ -55,7 +55,13 @@ class App
         int screen_width;
         int screen_height;
 
-        float move_speed = 0.05;
+        const float move_speed = 0.05;
+
+        const float fog_min = 10.0f;
+        const float fog_max = 180.0f;;
+
+        const float bg_fog_min = 10.0f;
+        const float bg_fog_max = 90.0f;
 
         Shader shader;
         Shader bg_shader;

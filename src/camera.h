@@ -43,7 +43,7 @@ class Camera
         float zoom;
         bool debug;
 
-        glm::vec3 debug_pos = glm::vec3(0.0f, 10.0f, 10.0f);
+        glm::vec3 debug_pos;
         glm::vec3 debug_front;
         glm::vec3 debug_right;
         glm::vec3 debug_up;
@@ -68,8 +68,8 @@ class Camera
 
     private:
 
-        float debug_yaw = 0.0f;
-        float debug_pitch = -30.0f;
+        float debug_yaw;
+        float debug_pitch;
 };
 
 

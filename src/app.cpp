@@ -135,10 +135,13 @@ void App::render()
     bg_shader.set_vec3("view_pos", camera.pos);
 
     ice_shader.use();
+    ice_shader.set_bool("debug", DEBUG);
     ice_shader.set_mat4("projection", projection);
     ice_shader.set_mat4("view", view);
     ice_shader.set_float("u_time", glfwGetTime()*0.5);
     ice_shader.set_vec3("view_pos", camera.pos);
+    ice_shader.set_float("fog_min", bg_fog_min);
+    ice_shader.set_float("fog_max", bg_fog_max);
 
 
     /****************************/
@@ -154,6 +157,8 @@ void App::render()
     ocean_floor->draw(ice_shader);
 
     ice_shader.use();
+    ice_shader.set_float("fog_min", fog_min);
+    ice_shader.set_float("fog_max", fog_max);
     for (auto &iceberg : icebergs)
         iceberg->draw(ice_shader);
 
@@ -216,7 +221,6 @@ bool App::gl_config()
 void App::load_shaders()
 {
     glm::vec3 fog_color = glm::vec3(0.0f, 0.01f, 0.1f);
-
     shader.create("../../shaders/multiple_lights_vs.shader", "../../shaders/multiple_lights_fs.shader");
     shader.use();
     shader.set_vec3("dir_light.direction", glm::vec3(0.5f, -0.5f, 0.7f));
@@ -235,6 +239,8 @@ void App::load_shaders()
     shader.set_float("spot_light.cut_off", glm::cos(glm::radians(5.0)));
     shader.set_float("spot_light.outer_cut_off", glm::cos(glm::radians(5.0)));
     shader.set_vec3("fog_color", fog_color);
+    shader.set_float("fog_min", fog_min);
+    shader.set_float("fog_max", fog_max);
 
 
     bg_shader.create("../../shaders/noise_vs.shader", "../../shaders/noise_fs.shader");

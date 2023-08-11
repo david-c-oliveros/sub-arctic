@@ -10,6 +10,9 @@ Camera::Camera(glm::vec3 _pos, glm::vec3 _up, float _yaw, float _pitch)
     yaw      = _yaw;
     pitch    = _pitch;
     debug = false;
+    debug_pos = pos;
+    debug_yaw = yaw;
+    debug_pitch = pitch;
     update_camera_vectors();
     update_debug_vectors();
 }
@@ -24,6 +27,9 @@ Camera::Camera(float pos_x, float pos_y, float pos_z, float up_x, float up_y, fl
     yaw      = _yaw;
     pitch    = _pitch;
     debug = false;
+    debug_pos = pos;
+    debug_yaw = yaw;
+    debug_pitch = pitch;
     update_camera_vectors();
     update_debug_vectors();
 }

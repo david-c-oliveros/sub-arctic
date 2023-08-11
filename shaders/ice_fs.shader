@@ -39,11 +39,16 @@ struct Spot_Light
 
 uniform vec2 u_resolution;
 uniform float u_time;
+
 uniform Dir_Light dir_light;
 uniform Spot_Light spot_light;
-uniform Material material;
+
 uniform vec3 view_pos;
 uniform vec3 fog_color;
+uniform float fog_min;
+uniform float fog_max;
+
+uniform bool debug;
 
 in vec3 frag_pos;
 in vec3 frag_world;
@@ -62,6 +67,7 @@ vec3 generate_noise();
 float fbm (vec2 _st);
 float random(vec2 _st);
 float fog_factor(float d);
+float remap(float x, float fromMin, float fromMax, float toMin, float toMax);
 
 
 void main()
@@ -73,14 +79,18 @@ void main()
     vec3 noise = generate_noise();
     vec3 result = calc_dir_light(dir_light, norm, view_dir, noise);
 //    result += calc_spot_light(spot_light, norm, frag_pos, view_dir, noise);
-    //result += vec3(0.0, 0.12, 0.15);
-    //result *= generate_noise();
+//    result += vec3(0.0, 0.12, 0.15);
 
+    //noise = clamp(noise, vec3(0.3f), vec3(0.7));
+    //result *= vec3(1.0, 1.1, 1.2);
+    ////result *= noise;
+    //result = mix (result, noise, 0.5);
     vec4 camera_eye = vec4(view_pos, 1.0);
     float d = distance(camera_eye, vec4(frag_pos, 1.0));
     float alpha = fog_factor(d);
 
-    result = mix(result, fog_color, alpha);
+    if (!debug)
+        result = mix(result, fog_color, alpha);
 
     frag_color = vec4(result, 1.0);
 }
@@ -138,11 +148,11 @@ float noise(vec2 _st)
 float fbm (vec2 _st)
 {
     float value = 0.0;
-    float amplitude = 0.6;
+    float amplitude = 0.7;
     vec2 shift = vec2(100.0);
 
-    mat2 rot = mat2(cos(0.5), sin(0.5),
-                    -sin(0.5), cos(0.50));
+    mat2 rot = mat2( cos(0.5), sin(0.5),
+                    -sin(0.5), cos(0.5));
 
     for (int i = 0; i < NUM_OCTAVES; ++i)
     {
@@ -163,14 +173,15 @@ vec3 generate_noise()
     vec3 color = vec3(0.0);
 
     vec2 q = vec2(0.);
-    q.x = fbm(st + 0.00*u_time);
+    q.x = fbm(st + vec2(0.0));
     q.y = fbm(st + vec2(1.0));
 
     vec2 r = vec2(0.);
     r.x = fbm(st + 1.0*q + vec2(1.7, 9.2));// + 0.15*u_time);
     r.y = fbm(st + 1.0*q + vec2(8.3, 2.8));// + 0.126*u_time);
 
-    float f = fbm(st);
+    float f = fbm(st + r);
+    f = remap(f, 0.0, 1.0, 0.7, 1.0);
 
     color = mix(vec3(0.101961, 0.619608, 0.666667),
                 vec3(0.666667, 0.666667, 0.498039),
@@ -182,8 +193,9 @@ vec3 generate_noise()
 
     color = mix(color,
                 vec3(0.666667, 1, 1),
-                clamp(length(r.x), 0.0, 1.0));
+                0.5);//clamp(length(r.x), 0.0, 1.0));
 
+    color *= vec3(1.0, 1.0, 1.2);
     return vec3((f*f*f + .1*f*f + .1*f) * color);
 }
 
@@ -191,9 +203,6 @@ vec3 generate_noise()
 
 float fog_factor(float d)
 {
-    const float fog_max = 180.0;
-    const float fog_min = 10.0;
-
     if (d >= fog_max)
         return 1.;
 
@@ -236,3 +245,11 @@ vec3 calc_spot_light(Spot_Light light, vec3 normal, vec3 frag_pos, vec3 view_dir
 
     return ambient + diffuse + specular;
 }
+
+
+
+float remap(float x, float fromMin, float fromMax, float toMin, float toMax)
+{
+    return (toMin + (x - fromMin) * (toMax - toMin) / (fromMax - fromMin));
+}
+
