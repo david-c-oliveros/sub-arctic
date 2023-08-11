@@ -99,13 +99,19 @@ void App::update()
     ocean_floor->update(ocean_floor_vel);
     for (auto &iceberg : icebergs)
         iceberg->update(iceberg_vel);
+
+    base->update(iceberg_vel);
 }
 
 
 
 void App::render()
 {
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    if (DEBUG)
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    else
+        glClearColor(0.0f, 0.01f, 0.1f, 1.0f);
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
@@ -150,6 +156,8 @@ void App::render()
     ice_shader.use();
     for (auto &iceberg : icebergs)
         iceberg->draw(ice_shader);
+
+    base->draw(ice_shader);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
@@ -334,14 +342,14 @@ void App::load_models()
     pos.x = 0.0f;
     pos.y = 20.0f;
     glm::vec3 offset = glm::vec3(50.0f, -30.0f, 0.0f);
-    int num_icebergs = 4;
-    std::vector<glm::vec3> iceberg_positions = load_position_data("../../res/environments/objects/iceberg_positions_v04.txt");
-    for (int i = 0; i < iceberg_positions.size(); i++)
+    std::vector<glm::vec3> iceberg_positions = load_position_data("../../res/environments/objects/iceberg_positions_v06.txt");
+    for (int i = 0; i < iceberg_positions.size() - 1; i++)
     {
         std::string path = "../../res/environments/objects/ice/iceberg_0" + std::to_string(i + 1) + ".obj";
         icebergs.push_back(std::make_shared<Object>(path, iceberg_positions[i], rot, 10.0));
         offset.x += 50.0f;
     }
+
 
     /***********************/
     /*        Mines        */
@@ -349,6 +357,14 @@ void App::load_models()
     pos.x = 15.0f;
     pos.y = 0.0f;
     mine = std::make_shared<Object>("../../res/environments/objects/mines/naval_mine_v02.obj", pos, rot, 0.7);
+
+    /**********************/
+    /*        Base        */
+    /**********************/
+    std::string path = "../../res/environments/objects/ice/base.obj";
+    int index = iceberg_positions.size() - 1;
+    glm::vec3 base_pose = iceberg_positions[index];
+    base = std::make_shared<Object>(path, base_pose, rot, 10.0);
 }
 
 

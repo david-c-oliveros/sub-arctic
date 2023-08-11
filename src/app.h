@@ -68,6 +68,7 @@ class App
         std::shared_ptr<Object> ocean_floor;
         std::shared_ptr<Object> debug_cube;
         std::shared_ptr<Object> mine;
+        std::shared_ptr<Object> base;
         std::vector<std::shared_ptr<Object>> icebergs;
 
         unsigned int cubeVAO;
