@@ -15,6 +15,7 @@ ma_sound bg_music;
 
 
 Camera camera(glm::vec3(0.0f, 0.0f, 40.0f));
+std::shared_ptr<Object> debug_cube;
 float delta_time = 0.0f;
 float last_frame = 0.0f;
 bool first_mouse = true;
@@ -77,6 +78,8 @@ void App::update()
 
     process_input(window, ship, move_speed, ocean_floor, audio_engine);
 
+    std::cerr << "\r" << "Debug cube pos: " << glm::to_string(debug_cube->pos) << std::flush;
+
     /**********************************/
     /*        Check Collisions        */
     /**********************************/
@@ -84,7 +87,7 @@ void App::update()
     {
         if (Box_Collider::aabb_collide(iceberg->collider, ship->collider))
         {
-            std::cout << "collision\n";
+            //std::cout << "collision\n";
         }
     }
 
@@ -97,10 +100,10 @@ void App::update()
 
     ship->update(delta_time);
     ocean_floor->update(ocean_floor_vel);
-    for (auto &iceberg : icebergs)
-        iceberg->update(iceberg_vel);
-
-    base->update(iceberg_vel);
+//    for (auto &iceberg : icebergs)
+//        iceberg->update(iceberg_vel);
+//
+//    base->update(iceberg_vel);
 }
 
 
@@ -136,29 +139,34 @@ void App::render()
 
     ice_shader.use();
     ice_shader.set_bool("debug", DEBUG);
+    ice_shader.set_bool("is_bg", true);
     ice_shader.set_mat4("projection", projection);
     ice_shader.set_mat4("view", view);
     ice_shader.set_float("u_time", glfwGetTime()*0.5);
     ice_shader.set_vec3("view_pos", camera.pos);
-    ice_shader.set_float("fog_min", bg_fog_min);
-    ice_shader.set_float("fog_max", bg_fog_max);
 
 
     /****************************/
+    /*                          */
     /*        Draw calls        */
+    /*                          */
     /****************************/
     bg_shader.use();
     background->draw(bg_shader);
 
     shader.use();
     ship->draw(shader);
+
+    /***********************/
+    /*        Debug        */
+    /***********************/
     
     ice_shader.use();
     ocean_floor->draw(ice_shader);
 
     ice_shader.use();
-    ice_shader.set_float("fog_min", fog_min);
-    ice_shader.set_float("fog_max", fog_max);
+    ice_shader.set_bool("is_bg", false);
+    debug_cube->draw(ice_shader);
     for (auto &iceberg : icebergs)
         iceberg->draw(ice_shader);
 
@@ -239,8 +247,6 @@ void App::load_shaders()
     shader.set_float("spot_light.cut_off", glm::cos(glm::radians(5.0)));
     shader.set_float("spot_light.outer_cut_off", glm::cos(glm::radians(5.0)));
     shader.set_vec3("fog_color", fog_color);
-    shader.set_float("fog_min", fog_min);
-    shader.set_float("fog_max", fog_max);
 
 
     bg_shader.create("../../shaders/noise_vs.shader", "../../shaders/noise_fs.shader");
@@ -271,6 +277,8 @@ void App::load_shaders()
     ice_shader.set_float("spot_light.cut_off", glm::cos(glm::radians(25.0)));
     ice_shader.set_float("spot_light.outer_cut_off", glm::cos(glm::radians(30.0)));
     ice_shader.set_vec3("fog_color", fog_color);
+    ice_shader.set_float("fog_scalar_min", fog_scalar_min);
+    ice_shader.set_float("fog_scalar_max", fog_scalar_max);
 }
 
 
@@ -316,8 +324,8 @@ void App::load_models()
     /****************************/
     /*        Debug Cube        */
     /****************************/
-    glm::vec3 tmp = glm::vec3(40.0f, 0.0f, 0.0f);
-    debug_cube = std::make_shared<Object>("../../res/environments/backgrounds/ocean/cube.obj", pos + tmp, rot, 1.0f, glm::vec3(20.0f));
+    glm::vec3 tmp = glm::vec3(0.0f, 0.0f, 0.0f);
+    debug_cube = std::make_shared<Object>("../../res/environments/backgrounds/ocean/cube.obj", tmp, rot, 1.0f, glm::vec3(20.0f));
 
     /**************************/
     /*        Backdrop        */
@@ -441,22 +449,38 @@ void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_
         }
     }
 
+    /*********************************/
+    /*        Move debug cube        */
+    /*********************************/
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+        debug_cube->pos.y += 0.1f;
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        debug_cube->pos.y -= 0.1f;
+
+    /*****************************/
+    /*        Move camera        */
+    /*****************************/
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
-        camera.pos.x -= 0.5;
-    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
     {
-        camera.pos.x += 0.5;
+        camera.pos.y -= 0.5;
         std::cout << glm::to_string(camera.pos) << std::endl;
     }
-
+    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
+    {
+        camera.pos.y += 0.5;
+        std::cout << glm::to_string(camera.pos) << std::endl;
+    }
     if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
     {
         camera.pos.z -= 1.0;
-        std::cout << glm::to_string(camera.pos) << std::endl;
     }
     if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
         camera.pos.z += 1.0;
 
+
+    /***************************/
+    /*        Exit Game        */
+    /***************************/
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 }

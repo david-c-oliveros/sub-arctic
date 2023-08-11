@@ -45,24 +45,27 @@ uniform Spot_Light spot_light;
 
 uniform vec3 view_pos;
 uniform vec3 fog_color;
-uniform float fog_min;
-uniform float fog_max;
+uniform float fog_scalar_min;
+uniform float fog_scalar_max;
 
 uniform bool debug;
+uniform bool is_bg;
 
-in vec3 frag_pos;
 in vec3 frag_world;
+in vec3 frag_local;
 in vec3 normal;
 in vec2 tex_coords;
-in vec4 vertex;
-in vec4 vertex_world;
 
 
 #define NUM_OCTAVES 5
+#define    FOG_MIN  10.0
+#define    FOG_MAX 180.0
+#define BG_FOG_MIN  10.0
+#define BG_FOG_MAX  90.0
 
 
 vec3 calc_dir_light(Dir_Light light, vec3 normal, vec3 view_dir, vec3 noise);
-vec3 calc_spot_light(Spot_Light light, vec3 normal, vec3 frag_pos, vec3 view_dir, vec3 noise);
+vec3 calc_spot_light(Spot_Light light, vec3 normal, vec3 frag_world, vec3 view_dir, vec3 noise);
 vec3 generate_noise();
 float fbm (vec2 _st);
 float random(vec2 _st);
@@ -73,24 +76,45 @@ float remap(float x, float fromMin, float fromMax, float toMin, float toMax);
 void main()
 {
     // Properties
+    /****************************/
+    /*        Properties        */
+    /****************************/
     vec3 norm = normalize(normal);
-    vec3 view_dir = normalize(view_pos - frag_pos);
+    vec3 view_dir = normalize(view_pos - frag_world);
 
     vec3 noise = generate_noise();
     vec3 result = calc_dir_light(dir_light, norm, view_dir, noise);
-//    result += calc_spot_light(spot_light, norm, frag_pos, view_dir, noise);
-//    result += vec3(0.0, 0.12, 0.15);
+//    result += calc_spot_light(spot_light, norm, frag_world, view_dir, noise);
 
-    //noise = clamp(noise, vec3(0.3f), vec3(0.7));
-    //result *= vec3(1.0, 1.1, 1.2);
-    ////result *= noise;
-    //result = mix (result, noise, 0.5);
+    if (debug)
+    {
+        frag_color = vec4(result, 1.0);
+        return;
+    }
+
+
+    /*************************/
+    /*        Add Fog        */
+    /*************************/
     vec4 camera_eye = vec4(view_pos, 1.0);
-    float d = distance(camera_eye, vec4(frag_pos, 1.0));
+    float d = distance(camera_eye, vec4(frag_world, 1.0));
     float alpha = fog_factor(d);
+    result = mix(result, fog_color, alpha);
 
-    if (!debug)
-        result = mix(result, fog_color, alpha);
+    if (is_bg)
+    {
+        frag_color = vec4(result, 1.0);
+        return;
+    }
+
+
+    /**************************************/
+    /*        Simple Light Falloff        */
+    /*       (for now just based on       */
+    /*            world Y value,          */
+    /*        not on light direction      */
+    /**************************************/
+    result *= remap(clamp(frag_world.y, -20.0, 20.0), -10.0, 20.0, 0.0, 1.0);
 
     frag_color = vec4(result, 1.0);
 }
@@ -168,7 +192,7 @@ float fbm (vec2 _st)
 vec3 generate_noise()
 {
     //vec2 st = gl_FragCoord.xy/u_resolution.xy*3;
-    vec2 st = frag_world.xy;
+    vec2 st = frag_local.xy;
 
     vec3 color = vec3(0.0);
 
@@ -203,6 +227,19 @@ vec3 generate_noise()
 
 float fog_factor(float d)
 {
+    float fog_min;
+    float fog_max;
+    if (is_bg)
+    {
+        fog_min = BG_FOG_MIN;// * fog_scalar_min;
+        fog_max = BG_FOG_MAX;// * fog_scalar_max;
+    }
+    else
+    {
+        fog_min = FOG_MIN * fog_scalar_min;
+        fog_max = FOG_MAX * fog_scalar_max;
+    }
+
     if (d >= fog_max)
         return 1.;
 
@@ -214,9 +251,9 @@ float fog_factor(float d)
 
 
 
-vec3 calc_spot_light(Spot_Light light, vec3 normal, vec3 frag_pos, vec3 view_dir, vec3 noise)
+vec3 calc_spot_light(Spot_Light light, vec3 normal, vec3 frag_world, vec3 view_dir, vec3 noise)
 {
-    vec3 light_dir = normalize(light.position - frag_pos);
+    vec3 light_dir = normalize(light.position - frag_world);
 
     // Diffuse Shading
     float diff = max(dot(normal, light_dir), 0.0);
@@ -227,7 +264,7 @@ vec3 calc_spot_light(Spot_Light light, vec3 normal, vec3 frag_pos, vec3 view_dir
     float spec = pow(max(dot(view_dir, reflect_dir), 0.0), shininess);
 
     // Attenuation
-    float distance    = length(light.position - frag_pos);
+    float distance    = length(light.position - frag_world);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
     // Spotlight Intensity
@@ -252,4 +289,3 @@ float remap(float x, float fromMin, float fromMax, float toMin, float toMax)
 {
     return (toMin + (x - fromMin) * (toMax - toMin) / (fromMax - fromMin));
 }
-

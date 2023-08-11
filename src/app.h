@@ -57,11 +57,8 @@ class App
 
         const float move_speed = 0.05;
 
-        const float fog_min = 10.0f;
-        const float fog_max = 180.0f;;
-
-        const float bg_fog_min = 10.0f;
-        const float bg_fog_max = 90.0f;
+        const float fog_scalar_min = 1.0f;
+        const float fog_scalar_max = 1.0f;
 
         Shader shader;
         Shader bg_shader;
@@ -72,7 +69,6 @@ class App
         std::shared_ptr<Object> background;
         std::shared_ptr<Object> ocean_surface;
         std::shared_ptr<Object> ocean_floor;
-        std::shared_ptr<Object> debug_cube;
         std::shared_ptr<Object> mine;
         std::shared_ptr<Object> base;
         std::vector<std::shared_ptr<Object>> icebergs;
