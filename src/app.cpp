@@ -22,6 +22,7 @@ bool first_mouse = true;
 float last_x = 0.0f;
 float last_y = 0.0f;
 
+Game_State state = Game_State::MENU;
 
 bool DEBUG = false;
 float SPEED_SCALAR = 1.0f;
@@ -58,6 +59,8 @@ void App::run()
 
     ma_sound_set_looping(&bg_music, true);
     ma_sound_start(&bg_music);
+    
+    state = Game_State::MENU;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -78,30 +81,59 @@ void App::update()
     delta_time = current_frame - last_frame;
     last_frame = current_frame;
 
+    glm::vec3 iceberg_vel;
+    glm::vec3 ocean_floor_vel;
+
     process_input(window, ship, move_speed, ocean_floor, audio_engine);
 
-    /**********************************/
-    /*        Check Collisions        */
-    /**********************************/
-    for (auto &iceberg : icebergs)
+    /****************************/
+    /*                          */
+    /*        Case: MENU        */
+    /*                          */
+    /****************************/
+    switch(state)
     {
-        if (Box_Collider::aabb_collide(iceberg->collider, ship->collider))
-        {
-            collision = true;
+        case Game_State::MENU:
+            iceberg_vel     = glm::vec3(0.0f);
+            ocean_floor_vel = glm::vec3(0.0f);
             break;
-        }
-        else
-        {
-            collision = false;
-        }
+
+
+        case Game_State::RUNNING:
+            iceberg_vel     = glm::vec3(-2.0f, 0.0f, 0.0f) * delta_time;
+            ocean_floor_vel = glm::vec3(-0.3f, 0.0f, 0.0f) * delta_time;
+
+
+            /**********************************/
+            /*        Check Collisions        */
+            /**********************************/
+            for (auto &iceberg : icebergs)
+            {
+                if (Box_Collider::aabb_collide(iceberg->collider, ship->collider))
+                {
+                    collision = true;
+                    state = Game_State::LOSE;
+                    break;
+                }
+                else
+                {
+                    collision = false;
+                }
+            }
+            break;
+
+
+        case Game_State::LOSE:
+            iceberg_vel     = glm::vec3(0.0f);
+            ocean_floor_vel = glm::vec3(0.0f);
+            reset_map();
+            break;
     }
 
 
     /********************************/
     /*        Update Objects        */
     /********************************/
-    glm::vec3 iceberg_vel     = glm::vec3(-2.0f, 0.0f, 0.0f) * delta_time;
-    glm::vec3 ocean_floor_vel = glm::vec3(-0.3f, 0.0f, 0.0f) * delta_time;
 
     ship->update(delta_time);
     ocean_floor->update(ocean_floor_vel * SPEED_SCALAR);
@@ -160,18 +192,34 @@ void App::render()
     /*        Draw        */
     /*                    */
     /**********************/
-    screen_text->render_text(text_shader, "All clear!",
-                             25.0f,
-                             80.0f,
-                             0.7f,
-                             glm::vec3(1.0f, 0.0f, 0.0f));
-    if (collision)
+    glm::vec3 text_color(0.0f, 0.2f, 0.4f);
+    glm::vec2 text_pos(screen_width * 0.45f, screen_height * 0.6f);
+    float newline_offset = screen_height * 0.06f;
+    float text_scale_med = 2.0f;
+    float text_scale_small = 1.5f;
+    float char_width = 12.0f;
+    if (state == Game_State::MENU)
     {
-        screen_text->render_text(text_shader, "You have struck an iceberg!",
-                                 screen_width * 0.5f,
-                                 screen_height * 0.2f,
-                                 1.0f,
-                                 glm::vec3(0.0f, 0.0f, 1.0f));
+        screen_text->render_text(text_shader, "Press Enter to begin",
+                                 text_pos.x - char_width * text_scale_med * 10,
+                                 text_pos.y,
+                                 text_scale_med,
+                                 text_color);
+        screen_text->render_text(text_shader, "Controls:",
+                                 text_pos.x,
+                                 text_pos.y - newline_offset,
+                                 text_scale_med,
+                                 text_color);
+        screen_text->render_text(text_shader, "S - Pitch Up",
+                                 text_pos.x,
+                                 text_pos.y - 2.0 * newline_offset,
+                                 text_scale_small,
+                                 text_color);
+        screen_text->render_text(text_shader, "W - Pitch Down",
+                                 text_pos.x,
+                                 text_pos.y - 3.0 * newline_offset,
+                                 text_scale_small,
+                                 text_color);
     }
 
 
@@ -238,7 +286,9 @@ bool App::gl_config()
     stbi_set_flip_vertically_on_load(false);
 
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_PROGRAM_POINT_SIZE);
+//    glEnable(GL_PROGRAM_POINT_SIZE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 
@@ -374,6 +424,7 @@ void App::load_models()
     /*****************************/
     /*        Ocean Floor        */
     /*****************************/
+    ocean_floor_start_position = glm::vec3(180.0f, -45.0f, -60.0f);
     pos.x = 180.0f;
     pos.y = -45.0f;
     pos.z = -60.0f;
@@ -382,9 +433,6 @@ void App::load_models()
     /**************************/
     /*        Icebergs        */
     /**************************/
-    pos.z = -7.0f;
-    pos.x = 0.0f;
-    pos.y = 20.0f;
     std::vector<glm::vec3> collider_scales;
     collider_scales.push_back(glm::vec3(23.0f));
     collider_scales.push_back(glm::vec3(12.0f,  56.0f, 2.0f));
@@ -394,28 +442,44 @@ void App::load_models()
     collider_scales.push_back(glm::vec3(25.0f,  55.0f, 2.0f));
     collider_scales.push_back(glm::vec3( 8.0f, 110.0f, 2.0f));
     collider_scales.push_back(glm::vec3(44.0f,  50.0f, 2.0f));
-    std::vector<glm::vec3> iceberg_positions = load_position_data("../../res/environments/objects/iceberg_positions_v06.txt");
-    for (int i = 0; i < iceberg_positions.size() - 1; i++)
+    iceberg_start_positions = load_position_data("../../res/environments/objects/iceberg_positions_v06.txt");
+    for (int i = 0; i < iceberg_start_positions.size() - 1; i++)
     {
         std::string path = "../../res/environments/objects/ice/iceberg_0" + std::to_string(i + 1) + ".obj";
-        icebergs.push_back(std::make_shared<Object>(path, iceberg_positions[i], rot, 10.0, collider_scales[i]));
+        icebergs.push_back(std::make_shared<Object>(path, iceberg_start_positions[i], rot, 10.0, collider_scales[i]));
     }
 
 
     /***********************/
     /*        Mines        */
     /***********************/
-    pos.x = 15.0f;
-    pos.y = 0.0f;
-    mine = std::make_shared<Object>("../../res/environments/objects/mines/naval_mine_v02.obj", pos, rot, 0.7);
+//    pos.x = 15.0f;
+//    pos.y = 0.0f;
+//    mine = std::make_shared<Object>("../../res/environments/objects/mines/naval_mine_v02.obj", pos, rot, 0.7);
 
     /**********************/
     /*        Base        */
     /**********************/
     std::string path = "../../res/environments/objects/ice/base.obj";
-    int index = iceberg_positions.size() - 1;
-    glm::vec3 base_pose = iceberg_positions[index];
-    base = std::make_shared<Object>(path, base_pose, rot, 10.0);
+    int index = iceberg_start_positions.size() - 1;
+    base_start_position = iceberg_start_positions[index];
+    base = std::make_shared<Object>(path, base_start_position, rot, 10.0);
+}
+
+
+
+void App::reset_map()
+{
+    ocean_floor->pos = ocean_floor_start_position;
+
+    for (int i = 0; i < iceberg_start_positions.size() - 1; i++)
+    {
+        icebergs[i]->pos = iceberg_start_positions[i];
+    }
+
+    base->pos = base_start_position;
+    
+    state = Game_State::RUNNING;
 }
 
 
@@ -544,6 +608,11 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     {
         DEBUG = !DEBUG;
         camera.debug = !camera.debug;
+    }
+
+    if (state == Game_State::MENU && key == GLFW_KEY_ENTER && action == GLFW_PRESS)
+    {
+        state = Game_State::RUNNING;
     }
 }
 

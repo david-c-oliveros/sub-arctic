@@ -19,8 +19,6 @@ Text::~Text()
 
 void Text::render_text(Shader &shader, std::string text, float x, float y, float scale, glm::vec3 color)
 {
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     shader.use();
     shader.set_mat4("projection", projection);
     shader.set_vec3("text_color", color);
@@ -83,7 +81,7 @@ bool Text::initialize()
     }
 
     FT_Face face;
-    if (FT_New_Face(ft, "../../fonts/VT323-Regular.ttf", 0, &face))
+    if (FT_New_Face(ft, "../../fonts/SourceCodePro-Regular.otf", 0, &face))
     {
         std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
         return false;

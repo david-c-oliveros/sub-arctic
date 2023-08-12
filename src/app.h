@@ -36,6 +36,17 @@ void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_
 std::vector<glm::vec3> load_position_data(const char* filepath);
 
 
+
+enum class Game_State
+{
+    MENU,
+    RUNNING,
+    LOSE,
+    WIN
+};
+
+
+
 class App
 {
     public:
@@ -50,6 +61,7 @@ class App
         void init_framebuffer();
         void load_models();
         void load_text();
+        void reset_map();
 
 
     private:
@@ -75,6 +87,10 @@ class App
         std::shared_ptr<Object> mine;
         std::shared_ptr<Object> base;
         std::vector<std::shared_ptr<Object>> icebergs;
+
+        std::vector<glm::vec3> iceberg_start_positions;
+        glm::vec3 ocean_floor_start_position;
+        glm::vec3 base_start_position;
 
         std::shared_ptr<Text> screen_text;
 
