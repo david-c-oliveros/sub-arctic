@@ -27,6 +27,7 @@ add_executable(${PROJECT_NAME}
     src/player.cpp
     src/timer.cpp
     src/box_collider.cpp
+    src/text.cpp
     )
 
 add_subdirectory(external/glfw)
@@ -39,6 +40,8 @@ target_include_directories(${PROJECT_NAME}
     PUBLIC external/glm
     PUBLIC external/assimp/include
     PUBLIC external/audio/SFML-2.6.0/include
+    PUBLIC /usr/include/freetype2
+    PUBLIC /usr/include/freetype2/freetype
     )
 
 target_link_directories(${PROJECT_NAME}
@@ -57,4 +60,5 @@ target_link_libraries(${PROJECT_NAME} glfw ${GLFW_LIBRARIES}
     m
     OpenGL
     assimp
+    freetype
     )

@@ -22,6 +22,7 @@
 #include "object.h"
 #include "player.h"
 #include "box_collider.h"
+#include "text.h"
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -48,6 +49,7 @@ class App
         void load_shaders();
         void init_framebuffer();
         void load_models();
+        void load_text();
 
 
     private:
@@ -60,6 +62,7 @@ class App
         const float fog_scalar_min = 1.0f;
         const float fog_scalar_max = 1.0f;
 
+        Shader text_shader;
         Shader shader;
         Shader bg_shader;
         Shader ice_shader;
@@ -72,6 +75,10 @@ class App
         std::shared_ptr<Object> mine;
         std::shared_ptr<Object> base;
         std::vector<std::shared_ptr<Object>> icebergs;
+
+        std::shared_ptr<Text> screen_text;
+
+        bool collision = false;
 
         unsigned int cubeVAO;
         unsigned int planeVAO;

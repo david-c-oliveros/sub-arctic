@@ -86,11 +86,11 @@ void main()
     vec3 result = calc_dir_light(dir_light, norm, view_dir, noise);
 //    result += calc_spot_light(spot_light, norm, frag_world, view_dir, noise);
 
-    if (debug)
-    {
-        frag_color = vec4(result, 1.0);
-        return;
-    }
+//    if (debug)
+//    {
+//        frag_color = vec4(result, 1.0);
+//        return;
+//    }
 
 
     /*************************/
@@ -114,7 +114,8 @@ void main()
     /*            world Y value,          */
     /*        not on light direction      */
     /**************************************/
-    result *= remap(clamp(frag_world.y, -20.0, 20.0), -10.0, 20.0, 0.0, 1.0);
+    result *= 1.3 * remap(clamp(frag_world.y, -20.0, 20.0), -10.0, 20.0, 0.5, 1.0);
+    result *= remap(clamp(frag_local.y, -20.0, 20.0), -10.0, 20.0, 0.5, 1.0);
 
     frag_color = vec4(result, 1.0);
 }

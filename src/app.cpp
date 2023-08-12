@@ -22,8 +22,9 @@ bool first_mouse = true;
 float last_x = 0.0f;
 float last_y = 0.0f;
 
-bool DEBUG = false;
 
+bool DEBUG = false;
+float SPEED_SCALAR = 1.0f;
 
 
 App::App(int _screen_width, int _screen_height)
@@ -36,6 +37,7 @@ App::App(int _screen_width, int _screen_height)
 bool App::create()
 {
     gl_config();
+    load_text();
     load_shaders();
     load_models();
 
@@ -78,8 +80,6 @@ void App::update()
 
     process_input(window, ship, move_speed, ocean_floor, audio_engine);
 
-    std::cerr << "\r" << "Debug cube pos: " << glm::to_string(debug_cube->pos) << std::flush;
-
     /**********************************/
     /*        Check Collisions        */
     /**********************************/
@@ -87,7 +87,12 @@ void App::update()
     {
         if (Box_Collider::aabb_collide(iceberg->collider, ship->collider))
         {
-            //std::cout << "collision\n";
+            collision = true;
+            break;
+        }
+        else
+        {
+            collision = false;
         }
     }
 
@@ -99,11 +104,11 @@ void App::update()
     glm::vec3 ocean_floor_vel = glm::vec3(-0.3f, 0.0f, 0.0f) * delta_time;
 
     ship->update(delta_time);
-    ocean_floor->update(ocean_floor_vel);
-//    for (auto &iceberg : icebergs)
-//        iceberg->update(iceberg_vel);
-//
-//    base->update(iceberg_vel);
+    ocean_floor->update(ocean_floor_vel * SPEED_SCALAR);
+    for (auto &iceberg : icebergs)
+        iceberg->update(iceberg_vel * SPEED_SCALAR);
+
+    base->update(iceberg_vel * SPEED_SCALAR);
 }
 
 
@@ -145,31 +150,53 @@ void App::render()
     ice_shader.set_float("u_time", glfwGetTime()*0.5);
     ice_shader.set_vec3("view_pos", camera.pos);
 
+    debug_shader.use();
+    debug_shader.set_mat4("projection", projection);
+    debug_shader.set_mat4("view", view);
 
-    /****************************/
-    /*                          */
-    /*        Draw calls        */
-    /*                          */
-    /****************************/
+
+    /**********************/
+    /*                    */
+    /*        Draw        */
+    /*                    */
+    /**********************/
+    screen_text->render_text(text_shader, "All clear!",
+                             25.0f,
+                             80.0f,
+                             0.7f,
+                             glm::vec3(1.0f, 0.0f, 0.0f));
+    if (collision)
+    {
+        screen_text->render_text(text_shader, "You have struck an iceberg!",
+                                 screen_width * 0.5f,
+                                 screen_height * 0.2f,
+                                 1.0f,
+                                 glm::vec3(0.0f, 0.0f, 1.0f));
+    }
+
+
     bg_shader.use();
     background->draw(bg_shader);
 
     shader.use();
     ship->draw(shader);
+    debug_shader.use();
+    ship->collider->draw(debug_shader);
 
-    /***********************/
-    /*        Debug        */
-    /***********************/
-    
     ice_shader.use();
     ocean_floor->draw(ice_shader);
 
     ice_shader.use();
     ice_shader.set_bool("is_bg", false);
-    debug_cube->draw(ice_shader);
     for (auto &iceberg : icebergs)
+    {
+        ice_shader.use();
         iceberg->draw(ice_shader);
+        debug_shader.use();
+        iceberg->collider->draw(debug_shader);
+    }
 
+    ice_shader.use();
     base->draw(ice_shader);
 
     glfwSwapBuffers(window);
@@ -212,23 +239,18 @@ bool App::gl_config()
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_PROGRAM_POINT_SIZE);
-//    glDepthFunc(GL_LESS);
-//    glEnable(GL_STENCIL_TEST);
-//    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-//    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-//
-//    glEnable(GL_BLEND);
-//    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-//
-//    glEnable(GL_CULL_FACE);
-//    glCullFace(GL_BACK);
 }
 
 
 
 void App::load_shaders()
 {
+    text_shader.create("../../shaders/text_vs.shader", "../../shaders/text_fs.shader");
+    text_shader.use();
+    text_shader.set_mat4("projection", screen_text->projection);
+
     glm::vec3 fog_color = glm::vec3(0.0f, 0.01f, 0.1f);
+
     shader.create("../../shaders/multiple_lights_vs.shader", "../../shaders/multiple_lights_fs.shader");
     shader.use();
     shader.set_vec3("dir_light.direction", glm::vec3(0.5f, -0.5f, 0.7f));
@@ -255,7 +277,7 @@ void App::load_shaders()
     bg_shader.set_vec3("fog_color", fog_color);
 
 
-    debug_shader.create("../../shaders/tex_vs.shader", "../../shaders/tex_fs.shader");
+    debug_shader.create("../../shaders/color_vs.shader", "../../shaders/color_fs.shader");
 
 
     ice_shader.create("../../shaders/ice_vs.shader", "../../shaders/ice_fs.shader");
@@ -311,6 +333,14 @@ void App::init_framebuffer()
 }
 
 
+
+void App::load_text()
+{
+    screen_text = std::make_shared<Text>(screen_width, screen_height);
+}
+
+
+
 void App::load_models()
 {
     glm::vec3 pos(0.0f);
@@ -335,7 +365,7 @@ void App::load_models()
 
     /*******************************/
     /*        Ocean Surface        */
-    /*****************************/
+    /*******************************/
     pos.x = 0.0f;
     pos.y = 25.0f;
     pos.z = 0.0f;
@@ -355,13 +385,20 @@ void App::load_models()
     pos.z = -7.0f;
     pos.x = 0.0f;
     pos.y = 20.0f;
-    glm::vec3 offset = glm::vec3(50.0f, -30.0f, 0.0f);
+    std::vector<glm::vec3> collider_scales;
+    collider_scales.push_back(glm::vec3(23.0f));
+    collider_scales.push_back(glm::vec3(12.0f,  56.0f, 2.0f));
+    collider_scales.push_back(glm::vec3(30.0f,  58.0f, 2.0f));
+    collider_scales.push_back(glm::vec3(20.0f,  38.0f, 2.0f));
+    collider_scales.push_back(glm::vec3( 9.0f, 158.0f, 2.0f));
+    collider_scales.push_back(glm::vec3(25.0f,  55.0f, 2.0f));
+    collider_scales.push_back(glm::vec3( 8.0f, 110.0f, 2.0f));
+    collider_scales.push_back(glm::vec3(44.0f,  50.0f, 2.0f));
     std::vector<glm::vec3> iceberg_positions = load_position_data("../../res/environments/objects/iceberg_positions_v06.txt");
     for (int i = 0; i < iceberg_positions.size() - 1; i++)
     {
         std::string path = "../../res/environments/objects/ice/iceberg_0" + std::to_string(i + 1) + ".obj";
-        icebergs.push_back(std::make_shared<Object>(path, iceberg_positions[i], rot, 10.0));
-        offset.x += 50.0f;
+        icebergs.push_back(std::make_shared<Object>(path, iceberg_positions[i], rot, 10.0, collider_scales[i]));
     }
 
 
@@ -408,7 +445,6 @@ std::vector<glm::vec3> load_position_data(const char* filepath)
         ss >> num_str;
         vec.z = std::stof(num_str);
 
-        std::cout << glm::to_string(vec) << std::endl;
         out.push_back(vec);
     }
 
@@ -420,6 +456,49 @@ std::vector<glm::vec3> load_position_data(const char* filepath)
 void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_speed,
                    std::shared_ptr<Object> background, ma_engine audio_engine)
 {
+
+    /********************************/
+    /*                              */
+    /*        Debug Controls        */
+    /*                              */
+    /********************************/
+
+    /*********************************/
+    /*        Move Debug Cube        */
+    /*********************************/
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+        debug_cube->pos.y += 0.1f;
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        debug_cube->pos.y -= 0.1f;
+
+    /*****************************/
+    /*        Move camera        */
+    /*****************************/
+    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
+    {
+        camera.pos.y -= 0.5;
+    }
+    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
+    {
+        camera.pos.y += 0.5;
+    }
+    if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
+    {
+        camera.pos.z -= 1.0;
+    }
+    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
+        camera.pos.z += 1.0;
+
+    /************************************************/
+    /*        Fast-Forward/Rewind Map Scroll        */
+    /************************************************/
+    if(glfwGetKey(window, GLFW_KEY_KP_ADD) == GLFW_PRESS)
+        SPEED_SCALAR = 20.0f;
+    else if(glfwGetKey(window, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS)
+        SPEED_SCALAR = -20.0f;
+    else
+        SPEED_SCALAR = 1.0f;
+
     if (DEBUG)
     {
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
@@ -448,34 +527,6 @@ void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_
             ship->input_dir = Movement::NONE;
         }
     }
-
-    /*********************************/
-    /*        Move debug cube        */
-    /*********************************/
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        debug_cube->pos.y += 0.1f;
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-        debug_cube->pos.y -= 0.1f;
-
-    /*****************************/
-    /*        Move camera        */
-    /*****************************/
-    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
-    {
-        camera.pos.y -= 0.5;
-        std::cout << glm::to_string(camera.pos) << std::endl;
-    }
-    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
-    {
-        camera.pos.y += 0.5;
-        std::cout << glm::to_string(camera.pos) << std::endl;
-    }
-    if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
-    {
-        camera.pos.z -= 1.0;
-    }
-    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
-        camera.pos.z += 1.0;
 
 
     /***************************/

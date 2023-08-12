@@ -1,6 +1,7 @@
 external
 tmp
 res
+fonts
 
 # Prerequisites
 *.d
