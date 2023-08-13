@@ -61,7 +61,7 @@ in vec2 tex_coords;
 #define    FOG_MIN  10.0
 #define    FOG_MAX 180.0
 #define BG_FOG_MIN  10.0
-#define BG_FOG_MAX  90.0
+#define BG_FOG_MAX  120.0
 
 
 vec3 calc_dir_light(Dir_Light light, vec3 normal, vec3 view_dir, vec3 noise);
@@ -232,8 +232,8 @@ float fog_factor(float d)
     float fog_max;
     if (is_bg)
     {
-        fog_min = BG_FOG_MIN;// * fog_scalar_min;
-        fog_max = BG_FOG_MAX;// * fog_scalar_max;
+        fog_min = BG_FOG_MIN * fog_scalar_min;
+        fog_max = BG_FOG_MAX * fog_scalar_max;
     }
     else
     {

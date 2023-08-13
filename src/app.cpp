@@ -1,4 +1,5 @@
 #define MINIAUDIO_IMPLEMENTATION
+#define GLT_IMPLEMENTATION
 
 #include "app.h"
 
@@ -14,7 +15,7 @@ ma_engine audio_engine;
 ma_sound bg_music;
 
 
-Camera camera(glm::vec3(0.0f, 0.0f, 40.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 55.0f));
 std::shared_ptr<Object> debug_cube;
 float delta_time = 0.0f;
 float last_frame = 0.0f;
@@ -84,6 +85,11 @@ void App::update()
     glm::vec3 iceberg_vel;
     glm::vec3 ocean_floor_vel;
 
+    if (DEBUG)
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    else
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
     process_input(window, ship, move_speed, ocean_floor, audio_engine);
 
     /****************************/
@@ -107,19 +113,24 @@ void App::update()
             /**********************************/
             /*        Check Collisions        */
             /**********************************/
-            for (auto &iceberg : icebergs)
-            {
-                if (Box_Collider::aabb_collide(iceberg->collider, ship->collider))
+            if (!DEBUG)
+                for (auto &iceberg : icebergs)
                 {
-                    collision = true;
-                    state = Game_State::LOSE;
-                    break;
+                    if (Box_Collider::aabb_collide(iceberg->collider, ship->collider))
+                    {
+                        collision = true;
+                        state = Game_State::LOSE;
+                        break;
+                    }
+                    else
+                    {
+                        collision = false;
+                    }
                 }
-                else
-                {
-                    collision = false;
-                }
-            }
+
+            std::cerr << '\r' << base->pos.x << std::flush;
+            if (base->pos.x <= 0.0f)
+                state = Game_State::WIN;
             break;
 
 
@@ -127,6 +138,12 @@ void App::update()
             iceberg_vel     = glm::vec3(0.0f);
             ocean_floor_vel = glm::vec3(0.0f);
             reset_map();
+            break;
+
+
+        case Game_State::WIN:
+            iceberg_vel     = glm::vec3(0.0f);
+            ocean_floor_vel = glm::vec3(0.0f);
             break;
     }
 
@@ -192,36 +209,31 @@ void App::render()
     /*        Draw        */
     /*                    */
     /**********************/
-    glm::vec3 text_color(0.0f, 0.2f, 0.4f);
-    glm::vec2 text_pos(screen_width * 0.45f, screen_height * 0.6f);
-    float newline_offset = screen_height * 0.06f;
-    float text_scale_med = 2.0f;
-    float text_scale_small = 1.5f;
-    float char_width = 12.0f;
-    if (state == Game_State::MENU)
+    switch(state)
     {
-        screen_text->render_text(text_shader, "Press Enter to begin",
-                                 text_pos.x - char_width * text_scale_med * 10,
-                                 text_pos.y,
-                                 text_scale_med,
-                                 text_color);
-        screen_text->render_text(text_shader, "Controls:",
-                                 text_pos.x,
-                                 text_pos.y - newline_offset,
-                                 text_scale_med,
-                                 text_color);
-        screen_text->render_text(text_shader, "S - Pitch Up",
-                                 text_pos.x,
-                                 text_pos.y - 2.0 * newline_offset,
-                                 text_scale_small,
-                                 text_color);
-        screen_text->render_text(text_shader, "W - Pitch Down",
-                                 text_pos.x,
-                                 text_pos.y - 3.0 * newline_offset,
-                                 text_scale_small,
-                                 text_color);
-    }
+        case Game_State::MENU:
+            {
+                glm::vec2 t_pos(screen_width * 0.5f, screen_height * 0.3f);
+                render_text("Press Enter To Begin", t_pos, text_color, 1.0f);
+                break;
+            }
 
+
+        case Game_State::RUNNING:
+            break;
+
+
+        case Game_State::LOSE:
+            break;
+
+
+        case Game_State::WIN:
+            {
+                glm::vec2 t_pos(screen_width * 0.5f, screen_height * 0.3f);
+                render_text("You have done it", t_pos, text_color, 1.0f);
+                break;
+            }
+    }
 
     bg_shader.use();
     background->draw(bg_shader);
@@ -229,7 +241,9 @@ void App::render()
     shader.use();
     ship->draw(shader);
     debug_shader.use();
-    ship->collider->draw(debug_shader);
+
+    if (DEBUG)
+        ship->collider->draw(debug_shader);
 
     ice_shader.use();
     ocean_floor->draw(ice_shader);
@@ -241,7 +255,9 @@ void App::render()
         ice_shader.use();
         iceberg->draw(ice_shader);
         debug_shader.use();
-        iceberg->collider->draw(debug_shader);
+
+        if (DEBUG)
+            iceberg->collider->draw(debug_shader);
     }
 
     ice_shader.use();
@@ -253,12 +269,41 @@ void App::render()
 
 
 
+void App::render_text(const char* str, glm::vec2 pos, glm::vec3 color, float scale)
+{
+    gltBeginDraw();
+    gltSetText(screen_text, str);
+    gltColor(color.x, color.y, color.z, 1.0f);
+//    gltDrawText2D(screen_text, 0.0f, 0.0f, 1.0f); // text, x, y, scale
+
+    gltDrawText2DAligned(screen_text,
+            (GLfloat)pos.x,
+            (GLfloat)pos.y,
+            3.0f,
+            GLT_CENTER, GLT_CENTER);
+    gltEndDraw();
+}
+
+
+
 bool App::gl_config()
 {
     glfwInit();
+
+    GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode *mode = glfwGetVideoMode(monitor);
+
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+    glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+    glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+
+    glfwWindowHint(GLFW_ALPHA_BITS, 8);
+    glfwWindowHint(GLFW_DEPTH_BITS, 24);
+    glfwWindowHint(GLFW_STENCIL_BITS, 8);
 
     window = glfwCreateWindow(screen_width, screen_height, "LearnOpenGL", NULL, NULL);
 
@@ -274,7 +319,7 @@ bool App::gl_config()
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+//    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetKeyCallback(window, key_callback);
 
     if (glewInit() != GLEW_OK)
@@ -283,10 +328,17 @@ bool App::gl_config()
         return false;
     }
 
+    if (!gltInit())
+    {
+        std::cout << "\nERROR: Failed to initialize glText\n";
+        glfwTerminate();
+        return false;
+    }
+
     stbi_set_flip_vertically_on_load(false);
 
     glEnable(GL_DEPTH_TEST);
-//    glEnable(GL_PROGRAM_POINT_SIZE);
+    glEnable(GL_PROGRAM_POINT_SIZE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
@@ -295,10 +347,6 @@ bool App::gl_config()
 
 void App::load_shaders()
 {
-    text_shader.create("../../shaders/text_vs.shader", "../../shaders/text_fs.shader");
-    text_shader.use();
-    text_shader.set_mat4("projection", screen_text->projection);
-
     glm::vec3 fog_color = glm::vec3(0.0f, 0.01f, 0.1f);
 
     shader.create("../../shaders/multiple_lights_vs.shader", "../../shaders/multiple_lights_fs.shader");
@@ -386,7 +434,7 @@ void App::init_framebuffer()
 
 void App::load_text()
 {
-    screen_text = std::make_shared<Text>(screen_width, screen_height);
+    screen_text = gltCreateText();
 }
 
 
@@ -442,7 +490,7 @@ void App::load_models()
     collider_scales.push_back(glm::vec3(25.0f,  55.0f, 2.0f));
     collider_scales.push_back(glm::vec3( 8.0f, 110.0f, 2.0f));
     collider_scales.push_back(glm::vec3(44.0f,  50.0f, 2.0f));
-    iceberg_start_positions = load_position_data("../../res/environments/objects/iceberg_positions_v06.txt");
+    iceberg_start_positions = load_position_data("../../res/environments/objects/iceberg_positions_v08.txt");
     for (int i = 0; i < iceberg_start_positions.size() - 1; i++)
     {
         std::string path = "../../res/environments/objects/ice/iceberg_0" + std::to_string(i + 1) + ".obj";
@@ -576,6 +624,9 @@ void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_
     }
     else
     {
+        /******************************/
+        /*        Player Input        */
+        /******************************/
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         {
             ship->input_dir = Movement::DOWN;

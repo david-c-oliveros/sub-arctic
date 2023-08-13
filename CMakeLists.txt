@@ -27,7 +27,6 @@ add_executable(${PROJECT_NAME}
     src/player.cpp
     src/timer.cpp
     src/box_collider.cpp
-    src/text.cpp
     )
 
 add_subdirectory(external/glfw)

@@ -1,7 +1,8 @@
 external
 tmp
-res
-fonts
+.unused
+*.blend
+*.blend1
 
 # Prerequisites
 *.d

@@ -6,7 +6,9 @@
 #include <memory>
 
 #include <GL/glew.h>
-#include <GLFW/glfw3.h>
+#include <GLFW/glfw3.h> /* https://github.com/glfw/glfw */
+
+#include "gltext.h" /* https://github.com/vallentin/glText */
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -22,7 +24,6 @@
 #include "object.h"
 #include "player.h"
 #include "box_collider.h"
-#include "text.h"
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -56,6 +57,10 @@ class App
         void run();
         void update();
         void render();
+        void render_text(const char* str,
+                         glm::vec2 pos = glm::vec3(1.0f),
+                         glm::vec3 color = glm::vec3(1.0f),
+                         float scale = 1.0f);
         bool gl_config();
         void load_shaders();
         void init_framebuffer();
@@ -69,7 +74,7 @@ class App
         int screen_width;
         int screen_height;
 
-        const float move_speed = 0.05;
+        const float move_speed = 0.03;
 
         const float fog_scalar_min = 1.0f;
         const float fog_scalar_max = 1.0f;
@@ -92,7 +97,8 @@ class App
         glm::vec3 ocean_floor_start_position;
         glm::vec3 base_start_position;
 
-        std::shared_ptr<Text> screen_text;
+        GLTtext *screen_text;
+        glm::vec3 text_color = glm::vec3(1.0f, 1.0f, 1.0f);
 
         bool collision = false;
 
