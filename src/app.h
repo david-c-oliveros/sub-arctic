@@ -24,6 +24,7 @@
 #include "object.h"
 #include "player.h"
 #include "box_collider.h"
+#include "timer.h"
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -43,7 +44,8 @@ enum class Game_State
     MENU,
     RUNNING,
     LOSE,
-    WIN
+    WIN,
+    RESTART
 };
 
 
@@ -66,7 +68,7 @@ class App
         void init_framebuffer();
         void load_models();
         void load_text();
-        void reset_map();
+        void restart_game();
 
 
     private:
@@ -96,6 +98,8 @@ class App
         std::vector<glm::vec3> iceberg_start_positions;
         glm::vec3 ocean_floor_start_position;
         glm::vec3 base_start_position;
+
+        Timer lose_timer = Timer(100);
 
         GLTtext *screen_text;
         glm::vec3 text_color = glm::vec3(1.0f, 1.0f, 1.0f);

@@ -120,6 +120,7 @@ void App::update()
                     {
                         collision = true;
                         state = Game_State::LOSE;
+                        lose_timer.start();
                         break;
                     }
                     else
@@ -137,14 +138,33 @@ void App::update()
         case Game_State::LOSE:
             iceberg_vel     = glm::vec3(0.0f);
             ocean_floor_vel = glm::vec3(0.0f);
-            reset_map();
+            if (lose_timer.check())
+            {
+                lose_timer.reset();
+                restart_game();
+            }
+            else
+            {
+                lose_timer.update();
+            }
             break;
 
 
         case Game_State::WIN:
-            iceberg_vel     = glm::vec3(0.0f);
-            ocean_floor_vel = glm::vec3(0.0f);
-            break;
+            {
+                iceberg_vel     = glm::vec3(0.0f);
+                ocean_floor_vel = glm::vec3(0.0f);
+                break;
+            }
+
+
+        case Game_State::RESTART:
+            {
+                iceberg_vel     = glm::vec3(0.0f);
+                ocean_floor_vel = glm::vec3(0.0f);
+                restart_game();
+                break;
+            }
     }
 
 
@@ -214,7 +234,7 @@ void App::render()
         case Game_State::MENU:
             {
                 glm::vec2 t_pos(screen_width * 0.5f, screen_height * 0.3f);
-                render_text("Press Enter To Begin", t_pos, text_color, 1.0f);
+                render_text("Press Enter To Begin", t_pos, text_color, 4.0f);
                 break;
             }
 
@@ -224,13 +244,19 @@ void App::render()
 
 
         case Game_State::LOSE:
-            break;
+            {
+                glm::vec2 t_pos(screen_width * 0.5f, screen_height * 0.3f);
+                render_text("CRITICAL HULL BREACH", t_pos, text_color, 4.0f);
+                render_text("Press Space to restart", t_pos + glm::vec2(0.0f, 100.0f), text_color, 2.0f);
+                break;
+            }
 
 
         case Game_State::WIN:
             {
                 glm::vec2 t_pos(screen_width * 0.5f, screen_height * 0.3f);
-                render_text("You have done it", t_pos, text_color, 1.0f);
+                render_text("Mission Complete", t_pos, text_color, 4.0f);
+                render_text("Press Space to restart", t_pos + glm::vec2(0.0f, 100.0f), text_color, 2.0f);
                 break;
             }
     }
@@ -279,7 +305,7 @@ void App::render_text(const char* str, glm::vec2 pos, glm::vec3 color, float sca
     gltDrawText2DAligned(screen_text,
             (GLfloat)pos.x,
             (GLfloat)pos.y,
-            3.0f,
+            scale,
             GLT_CENTER, GLT_CENTER);
     gltEndDraw();
 }
@@ -489,7 +515,7 @@ void App::load_models()
     collider_scales.push_back(glm::vec3( 9.0f, 158.0f, 2.0f));
     collider_scales.push_back(glm::vec3(25.0f,  55.0f, 2.0f));
     collider_scales.push_back(glm::vec3( 8.0f, 110.0f, 2.0f));
-    collider_scales.push_back(glm::vec3(44.0f,  50.0f, 2.0f));
+    collider_scales.push_back(glm::vec3(24.0f,  50.0f, 2.0f));
     iceberg_start_positions = load_position_data("../../res/environments/objects/iceberg_positions_v08.txt");
     for (int i = 0; i < iceberg_start_positions.size() - 1; i++)
     {
@@ -516,7 +542,7 @@ void App::load_models()
 
 
 
-void App::reset_map()
+void App::restart_game()
 {
     ocean_floor->pos = ocean_floor_start_position;
 
@@ -527,7 +553,7 @@ void App::reset_map()
 
     base->pos = base_start_position;
     
-    state = Game_State::RUNNING;
+    state = Game_State::MENU;
 }
 
 
@@ -605,9 +631,9 @@ void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_
     /*        Fast-Forward/Rewind Map Scroll        */
     /************************************************/
     if(glfwGetKey(window, GLFW_KEY_KP_ADD) == GLFW_PRESS)
-        SPEED_SCALAR = 20.0f;
+        SPEED_SCALAR = 40.0f;
     else if(glfwGetKey(window, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS)
-        SPEED_SCALAR = -20.0f;
+        SPEED_SCALAR = -40.0f;
     else
         SPEED_SCALAR = 1.0f;
 
@@ -664,6 +690,16 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (state == Game_State::MENU && key == GLFW_KEY_ENTER && action == GLFW_PRESS)
     {
         state = Game_State::RUNNING;
+    }
+
+    if (state == Game_State::LOSE && key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+    {
+        state = Game_State::RESTART;
+    }
+
+    if (state == Game_State::WIN && key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+    {
+        state = Game_State::RESTART;
     }
 }
 
