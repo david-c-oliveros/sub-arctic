@@ -3,6 +3,7 @@ tmp
 .unused
 *.blend
 *.blend1
+c.sh
 
 # Prerequisites
 *.d
