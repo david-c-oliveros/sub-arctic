@@ -32,9 +32,6 @@ void mouse_callback(GLFWwindow* window, double xpos_in, double ypos_in);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
-void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_speed,
-                   std::shared_ptr<Object> background, ma_engine audio_engine);
-
 std::vector<glm::vec3> load_position_data(const char* filepath);
 
 
@@ -69,6 +66,7 @@ class App
         void load_models();
         void load_text();
         void restart_game();
+        void process_input();
 
 
     private:

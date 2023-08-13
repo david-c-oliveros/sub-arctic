@@ -25,6 +25,9 @@ float last_y = 0.0f;
 
 Game_State state = Game_State::MENU;
 
+Timer torpedo_cooldown_timer(100);
+bool torpedo_charged = true;
+
 bool DEBUG = false;
 float SPEED_SCALAR = 1.0f;
 
@@ -65,6 +68,7 @@ void App::run()
 
     while (!glfwWindowShouldClose(window))
     {
+        process_input();
         update();
         render();
     }
@@ -90,7 +94,6 @@ void App::update()
     else
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
-    process_input(window, ship, move_speed, ocean_floor, audio_engine);
 
     /****************************/
     /*                          */
@@ -100,20 +103,33 @@ void App::update()
     switch(state)
     {
         case Game_State::MENU:
-            iceberg_vel     = glm::vec3(0.0f);
-            ocean_floor_vel = glm::vec3(0.0f);
-            break;
+            {
+                iceberg_vel     = glm::vec3(0.0f);
+                ocean_floor_vel = glm::vec3(0.0f);
+                break;
+            }
 
 
         case Game_State::RUNNING:
-            iceberg_vel     = glm::vec3(-2.0f, 0.0f, 0.0f) * delta_time;
-            ocean_floor_vel = glm::vec3(-0.3f, 0.0f, 0.0f) * delta_time;
+            {
+                iceberg_vel     = glm::vec3(-2.0f, 0.0f, 0.0f) * delta_time;
+                ocean_floor_vel = glm::vec3(-0.3f, 0.0f, 0.0f) * delta_time;
+
+                torpedo_cooldown_timer.update();
+                if (torpedo_cooldown_timer.check())
+                {
+                    std::cout << "Charged\n";
+                    torpedo_charged = true;
+                    torpedo_cooldown_timer.reset();
+                }
 
 
-            /**********************************/
-            /*        Check Collisions        */
-            /**********************************/
-            if (!DEBUG)
+                /**********************************/
+                /*        check collisions        */
+                /**********************************/
+                if (DEBUG)
+                    break;
+
                 for (auto &iceberg : icebergs)
                 {
                     if (Box_Collider::aabb_collide(iceberg->collider, ship->collider))
@@ -129,10 +145,10 @@ void App::update()
                     }
                 }
 
-            std::cerr << '\r' << base->pos.x << std::flush;
-            if (base->pos.x <= 0.0f)
-                state = Game_State::WIN;
-            break;
+                if (base->pos.x <= 0.0f)
+                    state = Game_State::WIN;
+                break;
+            }
 
 
         case Game_State::LOSE:
@@ -169,7 +185,7 @@ void App::update()
 
 
     /********************************/
-    /*        Update Objects        */
+    /*        update objects        */
     /********************************/
 
     ship->update(delta_time);
@@ -192,11 +208,12 @@ void App::render()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-    /*******************************************/
-    /*                                         */
-    /*        Model / View / Projection        */
-    /*                                         */
-    /*******************************************/
+    /**********************************************/
+    /*                                            */
+    /*        Set View/Projection Matrices        */
+    /*             And Other Uniforms             */
+    /*                                            */
+    /**********************************************/
     glm::mat4 view = camera.get_view_matrix();
     glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float)screen_width / (float)screen_height, 0.1f, 10000.0f);
 
@@ -558,41 +575,7 @@ void App::restart_game()
 
 
 
-std::vector<glm::vec3> load_position_data(const char* filepath)
-{
-    std::ifstream fin;
-    fin.open(filepath);
-    std::vector<std::string> lines;
-    std::string next_line;
-    glm::vec3 vec;
-    std::vector<glm::vec3> out;
-
-    while(std::getline(fin, next_line, '\n'))
-    {
-        lines.push_back(next_line);
-    }
-
-    for (auto &line : lines)
-    {
-        std::stringstream ss(line);
-        std::string num_str;
-        ss >> num_str;
-        vec.x = std::stof(num_str);
-        ss >> num_str;
-        vec.y = std::stof(num_str);
-        ss >> num_str;
-        vec.z = std::stof(num_str);
-
-        out.push_back(vec);
-    }
-
-    return out;
-}
-
-
-
-void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_speed,
-                   std::shared_ptr<Object> background, ma_engine audio_engine)
+void App::process_input()
 {
 
     /********************************/
@@ -667,6 +650,14 @@ void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_
         {
             ship->input_dir = Movement::NONE;
         }
+
+
+        if (glfwGetKey(window, GLFW_KEY_ENTER) && state == Game_State::RUNNING && torpedo_charged)
+        {
+            std::cout << "Fire torpedo" << std::endl;
+            torpedo_cooldown_timer.start();
+            torpedo_charged = false;
+        }
     }
 
 
@@ -675,6 +666,39 @@ void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_
     /***************************/
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+}
+
+
+
+std::vector<glm::vec3> load_position_data(const char* filepath)
+{
+    std::ifstream fin;
+    fin.open(filepath);
+    std::vector<std::string> lines;
+    std::string next_line;
+    glm::vec3 vec;
+    std::vector<glm::vec3> out;
+
+    while(std::getline(fin, next_line, '\n'))
+    {
+        lines.push_back(next_line);
+    }
+
+    for (auto &line : lines)
+    {
+        std::stringstream ss(line);
+        std::string num_str;
+        ss >> num_str;
+        vec.x = std::stof(num_str);
+        ss >> num_str;
+        vec.y = std::stof(num_str);
+        ss >> num_str;
+        vec.z = std::stof(num_str);
+
+        out.push_back(vec);
+    }
+
+    return out;
 }
 
 
