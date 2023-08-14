@@ -118,15 +118,19 @@ void App::update()
                 torpedo_cooldown_timer.update();
                 if (torpedo_cooldown_timer.check())
                 {
-                    std::cout << "Charged\n";
                     torpedo_charged = true;
                     torpedo_cooldown_timer.reset();
                 }
 
 
                 /**********************************/
-                /*        check collisions        */
+                /*                                */
+                /*        Check Collisions        */
+                /*                                */
                 /**********************************/
+                /*********************************************/
+                /*        Ship and Iceberg Collisions        */
+                /*********************************************/
                 if (DEBUG)
                     break;
 
@@ -144,6 +148,13 @@ void App::update()
                         collision = false;
                     }
                 }
+
+
+                /*********************************************/
+                /*        Torpedo and Mine Collisions        */
+                /*********************************************/
+                test_for_torpedo_hit();
+
 
                 if (base->pos.x <= 0.0f)
                     state = Game_State::WIN;
@@ -185,14 +196,49 @@ void App::update()
 
 
     /********************************/
-    /*        update objects        */
+    /*                              */
+    /*        Update Objects        */
+    /*                              */
     /********************************/
-
+    /*****************************/
+    /*        Update Ship        */
+    /*****************************/
     ship->update(delta_time);
+
+
+    /*********************************/
+    /*        Update Torpedos        */
+    /*********************************/
+    for (auto &t : torpedos)
+        t.update(delta_time);
+
+
+    /************************************/
+    /*        Update Ocean Floor        */
+    /************************************/
     ocean_floor->update(ocean_floor_vel * SPEED_SCALAR);
+
+
+    /*********************************/
+    /*        Update Icebergs        */
+    /*********************************/
     for (auto &iceberg : icebergs)
         iceberg->update(iceberg_vel * SPEED_SCALAR);
 
+
+    /******************************/
+    /*        Update Mines        */
+    /******************************/
+    for (auto &m : mines)
+    {
+        m.pos.x += iceberg_vel.x * SPEED_SCALAR;
+        m.update(delta_time);
+    }
+
+
+    /*****************************/
+    /*        Update Base        */
+    /*****************************/
     base->update(iceberg_vel * SPEED_SCALAR);
 }
 
@@ -278,30 +324,85 @@ void App::render()
             }
     }
 
+    /*********************************/
+    /*        Draw Background        */
+    /*********************************/
     bg_shader.use();
     background->draw(bg_shader);
 
+
+    /***************************/
+    /*        Draw Ship        */
+    /***************************/
     shader.use();
     ship->draw(shader);
-    debug_shader.use();
-
     if (DEBUG)
+    {
+        debug_shader.use();
         ship->collider->draw(debug_shader);
+    }
 
+
+    /*********************************/
+    /*        Draw Torpedo(s)        */
+    /*********************************/
+    shader.use();
+    for (auto& t : torpedos)
+    {
+        torpedo->pos = t.pos;
+        torpedo->rot_angle = t.rot_angle;
+        torpedo->draw(shader);
+
+        if (true)
+        {
+            torpedo->collider->origin = t.pos;
+            debug_shader.use();
+            torpedo->collider->draw(debug_shader);
+        }
+    }
+
+
+    /***********************************/
+    /*        Draw  Ocean Floor        */
+    /***********************************/
     ice_shader.use();
     ocean_floor->draw(ice_shader);
 
-    ice_shader.use();
+
+    /*******************************/
+    /*        Draw Icebergs        */
+    /*******************************/
     ice_shader.set_bool("is_bg", false);
     for (auto &iceberg : icebergs)
     {
         ice_shader.use();
         iceberg->draw(ice_shader);
-        debug_shader.use();
 
         if (DEBUG)
+        {
+            debug_shader.use();
             iceberg->collider->draw(debug_shader);
+        }
     }
+
+
+    /****************************/
+    /*        Draw Mines        */
+    /****************************/
+    shader.use();
+    for (auto &m : mines)
+    {
+        mine->pos = m.pos;
+        mine->draw(shader);
+
+        if (true)
+        {
+            mine->collider->origin = m.pos;
+            debug_shader.use();
+            mine->collider->draw(debug_shader);
+        }
+    }
+
 
     ice_shader.use();
     base->draw(ice_shader);
@@ -482,48 +583,58 @@ void App::load_text()
 
 
 
+/*****************************/
+/*                           */
+/*        Load Models        */
+/*                           */
+/*****************************/
 void App::load_models()
 {
     glm::vec3 pos(0.0f);
     float rot = 0.0f;
 
-    /***************************/
-    /*        Submarine        */
-    /***************************/
-    ship = std::make_shared<Player>("../../res/vehicles/submarine/sub3/sub_v03.obj", pos, rot, 0.2, glm::vec3(18.0f, 2.0f, 2.0f));
+    /********************************/
+    /*        Load Submarine        */
+    /********************************/
+    ship = std::make_shared<Player>("../../res/vehicles/submarine/sub3/sub_v03.obj", pos, rot, 0.2f, glm::vec3(18.0f, 2.0f, 2.0f));
 
-    /****************************/
-    /*        Debug Cube        */
-    /****************************/
+    /******************************/
+    /*        Load Torpedo        */
+    /******************************/
+    torpedo = std::make_shared<Object>("../../res/vehicles/torpedo/torpedo.obj", pos, rot, 0.2f, glm::vec3(2.0f, 0.8f, 0.8f));
+
+    /*********************************/
+    /*        Load Debug Cube        */
+    /*********************************/
     glm::vec3 tmp = glm::vec3(0.0f, 0.0f, 0.0f);
     debug_cube = std::make_shared<Object>("../../res/environments/backgrounds/ocean/cube.obj", tmp, rot, 1.0f, glm::vec3(20.0f));
 
-    /**************************/
-    /*        Backdrop        */
-    /**************************/
+    /*******************************/
+    /*        Load Backdrop        */
+    /*******************************/
     pos.z = -100.0f;
     background = std::make_shared<Object>("../../res/environments/backgrounds/ocean/long_quad_25d.obj", pos, rot, 1.0f);
 
-    /*******************************/
-    /*        Ocean Surface        */
-    /*******************************/
+    /************************************/
+    /*        Load Ocean Surface        */
+    /************************************/
     pos.x = 0.0f;
     pos.y = 25.0f;
     pos.z = 0.0f;
     ocean_surface = std::make_shared<Object>("../../res/environments/backgrounds/ocean/surface.obj", pos, rot, 1.0);
 
-    /*****************************/
-    /*        Ocean Floor        */
-    /*****************************/
+    /**********************************/
+    /*        Load Ocean Floor        */
+    /**********************************/
     ocean_floor_start_position = glm::vec3(180.0f, -45.0f, -60.0f);
     pos.x = 180.0f;
     pos.y = -45.0f;
     pos.z = -60.0f;
     ocean_floor = std::make_shared<Object>("../../res/environments/objects/ice/undersea_mountains_01.obj", pos, rot, 30.0);
 
-    /**************************/
-    /*        Icebergs        */
-    /**************************/
+    /*******************************/
+    /*        Load Icebergs        */
+    /*******************************/
     std::vector<glm::vec3> collider_scales;
     collider_scales.push_back(glm::vec3(23.0f));
     collider_scales.push_back(glm::vec3(12.0f,  56.0f, 2.0f));
@@ -541,20 +652,59 @@ void App::load_models()
     }
 
 
-    /***********************/
-    /*        Mines        */
-    /***********************/
-//    pos.x = 15.0f;
-//    pos.y = 0.0f;
-//    mine = std::make_shared<Object>("../../res/environments/objects/mines/naval_mine_v02.obj", pos, rot, 0.7);
+    /****************************/
+    /*        Load Mines        */
+    /****************************/
+    mine = std::make_shared<Object>("../../res/environments/objects/mines/naval_mine_v02.obj", glm::vec3(0.0f), rot, 0.7);
+    pos = glm::vec3(8.0f, -3.0f, 0.0f);
+    mines.push_back(Pos_Vel_Rot(pos));
 
-    /**********************/
-    /*        Base        */
-    /**********************/
+    /***************************/
+    /*        Load Base        */
+    /***************************/
     std::string path = "../../res/environments/objects/ice/base.obj";
     int index = iceberg_start_positions.size() - 1;
     base_start_position = iceberg_start_positions[index];
     base = std::make_shared<Object>(path, base_start_position, rot, 10.0);
+}
+
+
+
+void App::test_for_torpedo_hit()
+{
+    /*********************************************/
+    /*        Torpedo and Mine Collisions        */
+    /*********************************************/
+    bool hit = false;
+
+    std::vector<Pos_Vel_Rot>::iterator t_it;
+    for (auto t_it = torpedos.begin(); t_it != torpedos.end();)
+    {
+        torpedo->collider->update_pos(t_it->pos);
+        std::vector<Pos_Vel_Rot>::iterator m_it;
+
+        for (auto m_it = mines.begin(); m_it != mines.end();)
+        {
+            mine->collider->update_pos(m_it->pos);
+            if (!Box_Collider::aabb_collide(torpedo->collider, mine->collider))
+            {
+                m_it++;
+                continue;
+            }
+            hit = true;
+            mines.erase(m_it);
+            break;
+        }
+
+        if (hit)
+        {
+            torpedos.erase(t_it);
+        }
+        else
+        {
+            t_it++;
+        }
+    }
 }
 
 
@@ -622,20 +772,25 @@ void App::process_input()
 
     if (DEBUG)
     {
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
             camera.process_keyboard(Camera_Movement::UP, delta_time);
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
             camera.process_keyboard(Camera_Movement::DOWN, delta_time);
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
             camera.process_keyboard(Camera_Movement::LEFT, delta_time);
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
             camera.process_keyboard(Camera_Movement::RIGHT, delta_time);
     }
     else
     {
         /******************************/
+        /*                            */
         /*        Player Input        */
+        /*                            */
         /******************************/
+        /***************************/
+        /*        Move Ship        */
+        /***************************/
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         {
             ship->input_dir = Movement::DOWN;
@@ -652,9 +807,14 @@ void App::process_input()
         }
 
 
+        /******************************/
+        /*        Fire Torpedo        */
+        /******************************/
         if (glfwGetKey(window, GLFW_KEY_ENTER) && state == Game_State::RUNNING && torpedo_charged)
         {
-            std::cout << "Fire torpedo" << std::endl;
+            glm::vec3 start_pos = ship->pos;
+            start_pos.y -= 1.0f;
+            torpedos.push_back(Pos_Vel_Rot(start_pos, glm::vec3(0.05f, -0.1f, 0.0f), 0.0f, false));
             torpedo_cooldown_timer.start();
             torpedo_charged = false;
         }
