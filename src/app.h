@@ -27,13 +27,13 @@
 #include "timer.h"
 
 
+#define GRAVITY -0.001f
+
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos_in, double ypos_in);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
-
-void process_input(GLFWwindow* window, std::shared_ptr<Player> ship, float move_speed,
-                   std::shared_ptr<Object> background, ma_engine audio_engine);
 
 std::vector<glm::vec3> load_position_data(const char* filepath);
 
@@ -46,6 +46,40 @@ enum class Game_State
     LOSE,
     WIN,
     RESTART
+};
+
+
+
+struct Pos_Vel_Rot
+{
+    glm::vec3 pos;
+    glm::vec3 vel;
+    float rot_angle;
+    bool anchored;
+    bool buoyant;
+
+    Pos_Vel_Rot(glm::vec3 _pos = glm::vec3(0.0f),
+                glm::vec3 _vel = glm::vec3(0.0f),
+                float _rot_angle = 0.0f,
+                bool _anchored = true,
+                bool _buoyant = false)
+    {
+        pos = _pos;
+        vel = _vel;
+        rot_angle = _rot_angle;
+        anchored = _anchored;
+        buoyant = _buoyant;
+    }
+
+    void update(float delta_time)
+    {
+        if (!anchored)
+        {
+            vel.y = std::clamp(vel.y + GRAVITY, -0.03f, 0.0f);
+            pos += vel;
+            rot_angle = glm::mix(rot_angle, -45.0f, delta_time * 0.2f);
+        }
+    }
 };
 
 
@@ -68,7 +102,9 @@ class App
         void init_framebuffer();
         void load_models();
         void load_text();
+        void test_for_torpedo_hit();
         void restart_game();
+        void process_input();
 
 
     private:
@@ -88,10 +124,13 @@ class App
         Shader debug_shader;
 
         std::shared_ptr<Player> ship;
+        std::shared_ptr<Object> torpedo;
+        std::vector<Pos_Vel_Rot> torpedos;
+        std::shared_ptr<Object> mine;
+        std::vector<Pos_Vel_Rot> mines;
         std::shared_ptr<Object> background;
         std::shared_ptr<Object> ocean_surface;
         std::shared_ptr<Object> ocean_floor;
-        std::shared_ptr<Object> mine;
         std::shared_ptr<Object> base;
         std::vector<std::shared_ptr<Object>> icebergs;
 

@@ -53,6 +53,7 @@ class Object
 
         void update(glm::vec3 new_vel);
         void draw(Shader &shader);
+        void add_impulse(glm::vec3 impulse);
 };
 
 

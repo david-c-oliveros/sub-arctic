@@ -17,9 +17,11 @@ Object::Object(std::shared_ptr<Model> _model_mesh, glm::vec3 _pos,
     vel = glm::vec3(0.0f);
     world_up = _up;
 
+    // BROKEN
     front = glm::vec3(1.0f, 0.0f, 0.0f);
     right = glm::normalize(glm::cross(front, world_up));
     up    = glm::normalize(glm::cross(right, front));
+    //^^^^^^^
     collider = std::make_shared<Box_Collider>(pos, collider_dim);
 }
 
@@ -35,9 +37,11 @@ Object::Object(std::string model_path, glm::vec3 _pos,
     vel = glm::vec3(0.0f);
     world_up = _up;
 
+    // BROKEN
     front = glm::vec3(1.0f, 0.0f, 0.0f);
     right = glm::normalize(glm::cross(front, world_up));
     up    = glm::normalize(glm::cross(right, front));
+    //^^^^^^^
     collider = std::make_shared<Box_Collider>(pos, collider_dim);
 }
 
@@ -57,9 +61,16 @@ void Object::draw(Shader &shader)
     glm::mat4 model = glm::mat4(1.0f);
 
     model = glm::translate(model, pos);
-    model = glm::rotate(model, glm::radians(rot_angle), right);
+    model = glm::rotate(model, glm::radians(rot_angle), glm::vec3(0.0f, 0.0f, 1.0f));
     model = glm::scale(model , glm::vec3(scale, scale, scale));
 
     shader.set_mat4("model", model);
     model_mesh->draw(shader);
+}
+
+
+
+void Object::add_impulse(glm::vec3 impulse)
+{
+    vel += impulse;
 }
