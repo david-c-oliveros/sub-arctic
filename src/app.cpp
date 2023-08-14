@@ -324,6 +324,9 @@ void App::render()
             }
     }
 
+
+    render_text("Press Enter To Begin", t_pos, text_color, 4.0f);
+
     /*********************************/
     /*        Draw Background        */
     /*********************************/
@@ -346,16 +349,17 @@ void App::render()
     /*********************************/
     /*        Draw Torpedo(s)        */
     /*********************************/
-    shader.use();
     for (auto& t : torpedos)
     {
+        shader.use();
         torpedo->pos = t.pos;
         torpedo->rot_angle = t.rot_angle;
         torpedo->draw(shader);
 
-        if (true)
+        if (DEBUG)
         {
-            torpedo->collider->origin = t.pos;
+            glm::vec3 collider_pos = t.pos + glm::vec3(0.0f, 0.4f, 0.0f);
+            torpedo->collider->update_pos(collider_pos);
             debug_shader.use();
             torpedo->collider->draw(debug_shader);
         }
@@ -389,15 +393,15 @@ void App::render()
     /****************************/
     /*        Draw Mines        */
     /****************************/
-    shader.use();
     for (auto &m : mines)
     {
+        shader.use();
         mine->pos = m.pos;
         mine->draw(shader);
 
         if (true)
         {
-            mine->collider->origin = m.pos;
+            mine->collider->update_pos(m.pos);
             debug_shader.use();
             mine->collider->draw(debug_shader);
         }
@@ -655,9 +659,14 @@ void App::load_models()
     /****************************/
     /*        Load Mines        */
     /****************************/
+    mine_start_positions = load_position_data("../../res/environments/objects/mine_positions_v01.txt");
+    std::cout << "N mines: " << mine_start_positions.size() << std::endl;
     mine = std::make_shared<Object>("../../res/environments/objects/mines/naval_mine_v02.obj", glm::vec3(0.0f), rot, 0.7);
-    pos = glm::vec3(8.0f, -3.0f, 0.0f);
-    mines.push_back(Pos_Vel_Rot(pos));
+    for (int i = 0; i < mine_start_positions.size(); i++)
+    {
+        mines.push_back(Pos_Vel_Rot(mine_start_positions[i]));
+    }
+
 
     /***************************/
     /*        Load Base        */
@@ -680,7 +689,8 @@ void App::test_for_torpedo_hit()
     std::vector<Pos_Vel_Rot>::iterator t_it;
     for (auto t_it = torpedos.begin(); t_it != torpedos.end();)
     {
-        torpedo->collider->update_pos(t_it->pos);
+        glm::vec3 collider_pos = t_it->pos + glm::vec3(0.0f, 1.0f, 0.0f);
+        torpedo->collider->update_pos(collider_pos);
         std::vector<Pos_Vel_Rot>::iterator m_it;
 
         for (auto m_it = mines.begin(); m_it != mines.end();)
@@ -698,6 +708,7 @@ void App::test_for_torpedo_hit()
 
         if (hit)
         {
+            player_score += 8;
             torpedos.erase(t_it);
         }
         else
@@ -772,13 +783,13 @@ void App::process_input()
 
     if (DEBUG)
     {
-        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
             camera.process_keyboard(Camera_Movement::UP, delta_time);
-        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
             camera.process_keyboard(Camera_Movement::DOWN, delta_time);
-        if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
             camera.process_keyboard(Camera_Movement::LEFT, delta_time);
-        if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
             camera.process_keyboard(Camera_Movement::RIGHT, delta_time);
     }
     else
@@ -814,7 +825,10 @@ void App::process_input()
         {
             glm::vec3 start_pos = ship->pos;
             start_pos.y -= 1.0f;
-            torpedos.push_back(Pos_Vel_Rot(start_pos, glm::vec3(0.05f, -0.1f, 0.0f), 0.0f, false));
+            glm::vec3 start_vel = glm::vec3(0.05f, -0.1f, 0.0f);
+            start_vel.y += ship->vel.y;
+
+            torpedos.push_back(Pos_Vel_Rot(start_pos, start_vel, 0.0f, false));
             torpedo_cooldown_timer.start();
             torpedo_charged = false;
         }
