@@ -28,6 +28,7 @@
 
 
 #define GRAVITY -0.001f
+#define FRICTION 0.99f
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -57,6 +58,7 @@ struct Pos_Vel_Rot
     float rot_angle;
     bool anchored;
     bool buoyant;
+    glm::vec3 torpedo_initial_impulse = glm::vec3(0.0f, -0.1f, 0.0f);
 
     Pos_Vel_Rot(glm::vec3 _pos = glm::vec3(0.0f),
                 glm::vec3 _vel = glm::vec3(0.0f),
@@ -75,9 +77,13 @@ struct Pos_Vel_Rot
     {
         if (!anchored)
         {
-            vel.y = std::clamp(vel.y + GRAVITY, -0.03f, 0.0f);
+            if (abs(vel.y) < 0.03f)
+                vel.y += GRAVITY;
+
+            std::cout << "vel: " << glm::to_string(vel) << std::endl;
+            vel *= FRICTION;
             pos += vel;
-            rot_angle = glm::mix(rot_angle, -45.0f, delta_time * 0.2f);
+            rot_angle = glm::mix(rot_angle, -25.0f, delta_time * 0.2f);
         }
     }
 };
@@ -135,6 +141,7 @@ class App
         std::vector<std::shared_ptr<Object>> icebergs;
 
         std::vector<glm::vec3> iceberg_start_positions;
+        std::vector<glm::vec3> mine_start_positions;
         glm::vec3 ocean_floor_start_position;
         glm::vec3 base_start_position;
 
@@ -142,6 +149,8 @@ class App
 
         GLTtext *screen_text;
         glm::vec3 text_color = glm::vec3(1.0f, 1.0f, 1.0f);
+
+        int player_score = 0;
 
         bool collision = false;
 
