@@ -4,8 +4,8 @@
 #include "app.h"
 
 
-const char* music  = "../../res/audio/music_spooky_ambience.wav";
-const char* charge = "../../res/audio/FreeSFX/Voices/Nightmare Mode.wav";
+const char* music  = "res/audio/music_spooky_ambience.wav";
+const char* charge = "res/audio/FreeSFX/Voices/Nightmare Mode.wav";
 
 /***************************/
 /*        MiniAudio        */
@@ -15,7 +15,7 @@ ma_engine audio_engine;
 ma_sound bg_music;
 
 
-Camera camera(glm::vec3(0.0f, 0.0f, 55.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 60.0f));
 std::shared_ptr<Object> debug_cube;
 float delta_time = 0.0f;
 float last_frame = 0.0f;
@@ -89,11 +89,6 @@ void App::update()
     glm::vec3 iceberg_vel;
     glm::vec3 ocean_floor_vel;
 
-    if (DEBUG)
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    else
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-
 
     /****************************/
     /*                          */
@@ -137,6 +132,23 @@ void App::update()
                 for (auto &iceberg : icebergs)
                 {
                     if (Box_Collider::aabb_collide(iceberg->collider, ship->collider))
+                    {
+                        collision = true;
+                        state = Game_State::LOSE;
+                        lose_timer.start();
+                        break;
+                    }
+                    else
+                    {
+                        collision = false;
+                    }
+                }
+
+                for (auto &m : mines)
+                {
+                    mine->collider->update_pos(m.pos);
+
+                    if (Box_Collider::aabb_collide(mine->collider, ship->collider))
                     {
                         collision = true;
                         state = Game_State::LOSE;
@@ -295,11 +307,13 @@ void App::render()
     switch(state)
     {
         case Game_State::MENU:
-            {
-                glm::vec2 t_pos(screen_width * 0.5f, screen_height * 0.3f);
-                render_text("Press Enter To Begin", t_pos, text_color, 4.0f);
-                break;
-            }
+        {
+            glm::vec2 t_pos(screen_width * 0.5f, screen_height * 0.3f);
+            render_text("Subarctic", t_pos - glm::vec2(0.0f, 100.0f), text_color, 4.0f, true);
+            render_text("Objective: Eliminate as many mines as possible", t_pos, text_color, 1.8f, true);
+            render_text("Press Space To Begin", t_pos + glm::vec2(0.0f, 80.0f), text_color, 2.4f, true);
+            break;
+        }
 
 
         case Game_State::RUNNING:
@@ -307,25 +321,32 @@ void App::render()
 
 
         case Game_State::LOSE:
-            {
-                glm::vec2 t_pos(screen_width * 0.5f, screen_height * 0.3f);
-                render_text("CRITICAL HULL BREACH", t_pos, text_color, 4.0f);
-                render_text("Press Space to restart", t_pos + glm::vec2(0.0f, 100.0f), text_color, 2.0f);
-                break;
-            }
+        {
+            glm::vec2 t_pos(screen_width * 0.5f, screen_height * 0.3f);
+            render_text("CRITICAL HULL BREACH", t_pos, text_color, 2.0f, true);
+            render_text("Press Space to restart", t_pos + glm::vec2(0.0f, 100.0f), text_color, 1.0f, true);
+            break;
+        }
 
 
         case Game_State::WIN:
-            {
-                glm::vec2 t_pos(screen_width * 0.5f, screen_height * 0.3f);
-                render_text("Mission Complete", t_pos, text_color, 4.0f);
-                render_text("Press Space to restart", t_pos + glm::vec2(0.0f, 100.0f), text_color, 2.0f);
-                break;
-            }
+        {
+            glm::vec2 t_pos(screen_width * 0.5f, screen_height * 0.3f);
+            render_text("Mission Complete", t_pos, text_color, 2.0f, true);
+            render_text("Press Space to restart", t_pos + glm::vec2(0.0f, 100.0f), text_color, 1.0f, true);
+            break;
+        }
     }
 
 
-    render_text("Press Enter To Begin", t_pos, text_color, 4.0f);
+    glm::vec2 t_pos(50.0f, 50.0f);
+    std::string score_str = "Score: " + std::to_string(player_score);
+    render_text(score_str.c_str(), t_pos, text_color, 2.4f, false);
+    t_pos.y += 50.0f;
+    render_text("Controls:", t_pos + glm::vec2(0.0f, 40.0f), text_color, 1.8f, false);
+    render_text("W - Pitch Down", t_pos + glm::vec2(0.0f, 80.0f), text_color, 1.5f, false);
+    render_text("S - Pitch Down", t_pos + glm::vec2(0.0f, 120.0f), text_color, 1.5f, false);
+    render_text("Enter - Fire Torpedo", t_pos + glm::vec2(0.0f, 160.0f), text_color, 1.5f, false);
 
     /*********************************/
     /*        Draw Background        */
@@ -399,7 +420,7 @@ void App::render()
         mine->pos = m.pos;
         mine->draw(shader);
 
-        if (true)
+        if (DEBUG)
         {
             mine->collider->update_pos(m.pos);
             debug_shader.use();
@@ -408,8 +429,8 @@ void App::render()
     }
 
 
-    ice_shader.use();
-    base->draw(ice_shader);
+//    ice_shader.use();
+//    base->draw(ice_shader);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
@@ -417,18 +438,25 @@ void App::render()
 
 
 
-void App::render_text(const char* str, glm::vec2 pos, glm::vec3 color, float scale)
+void App::render_text(const char* str, glm::vec2 pos, glm::vec3 color, float scale, bool aligned)
 {
     gltBeginDraw();
     gltSetText(screen_text, str);
     gltColor(color.x, color.y, color.z, 1.0f);
-//    gltDrawText2D(screen_text, 0.0f, 0.0f, 1.0f); // text, x, y, scale
 
-    gltDrawText2DAligned(screen_text,
-            (GLfloat)pos.x,
-            (GLfloat)pos.y,
-            scale,
-            GLT_CENTER, GLT_CENTER);
+    if (aligned)
+    {
+        gltDrawText2DAligned(screen_text,
+                (GLfloat)pos.x,
+                (GLfloat)pos.y,
+                scale,
+                GLT_CENTER, GLT_CENTER);
+    }
+    else
+    {
+        gltDrawText2D(screen_text, (GLfloat)pos.x, (GLfloat)pos.y, scale); // text, x, y, scale
+    }
+
     gltEndDraw();
 }
 
@@ -453,7 +481,7 @@ bool App::gl_config()
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glfwWindowHint(GLFW_STENCIL_BITS, 8);
 
-    window = glfwCreateWindow(screen_width, screen_height, "LearnOpenGL", NULL, NULL);
+    window = glfwCreateWindow(screen_width, screen_height, "Subarctic", NULL, NULL);
 
     if (window == NULL)
     {
@@ -467,14 +495,20 @@ bool App::gl_config()
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
-//    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetKeyCallback(window, key_callback);
+    glfwSetWindowAspectRatio(window, 4, 3);
 
-    if (glewInit() != GLEW_OK)
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
-        std::cout << "\nERROR: Failed to initialize GLEW\n";
-        return false;
+        std::cout << "Failed to initialize GLAD" << std::endl;
     }
+
+//    if (glewInit() != GLEW_OK)
+//    {
+//        std::cout << "\nERROR: Failed to initialize GLEW\n";
+//        return false;
+//    }
 
     if (!gltInit())
     {
@@ -493,11 +527,16 @@ bool App::gl_config()
 
 
 
+/******************************/
+/*                            */
+/*        Load Shaders        */
+/*                            */
+/******************************/
 void App::load_shaders()
 {
     glm::vec3 fog_color = glm::vec3(0.0f, 0.01f, 0.1f);
 
-    shader.create("../../shaders/multiple_lights_vs.shader", "../../shaders/multiple_lights_fs.shader");
+    shader.create("shaders/multiple_lights_vs.shader", "shaders/multiple_lights_fs.shader");
     shader.use();
     shader.set_vec3("dir_light.direction", glm::vec3(0.5f, -0.5f, 0.7f));
     shader.set_vec3("dir_light.ambient", glm::vec3(0.0f, 0.0f, 0.0f));
@@ -515,18 +554,20 @@ void App::load_shaders()
     shader.set_float("spot_light.cut_off", glm::cos(glm::radians(5.0)));
     shader.set_float("spot_light.outer_cut_off", glm::cos(glm::radians(5.0)));
     shader.set_vec3("fog_color", fog_color);
+    shader.set_float("brightness", brightness);
 
 
-    bg_shader.create("../../shaders/noise_vs.shader", "../../shaders/noise_fs.shader");
+    bg_shader.create("shaders/noise_vs.shader", "shaders/noise_fs.shader");
     bg_shader.use();
     bg_shader.set_vec2("u_resolution", glm::vec2(screen_width * .4, screen_height * .4));
     bg_shader.set_vec3("fog_color", fog_color);
+    bg_shader.set_float("brightness", brightness);
 
 
-    debug_shader.create("../../shaders/color_vs.shader", "../../shaders/color_fs.shader");
+    debug_shader.create("shaders/color_vs.shader", "shaders/color_fs.shader");
 
 
-    ice_shader.create("../../shaders/ice_vs.shader", "../../shaders/ice_fs.shader");
+    ice_shader.create("shaders/ice_vs.shader", "shaders/ice_fs.shader");
     ice_shader.use();
     ice_shader.set_vec3("dir_light.direction", glm::vec3(0.5f, -0.5f, 0.7f));
     ice_shader.set_vec3("dir_light.ambient", glm::vec3(0.5f, 0.5f, 0.5f));
@@ -547,6 +588,7 @@ void App::load_shaders()
     ice_shader.set_vec3("fog_color", fog_color);
     ice_shader.set_float("fog_scalar_min", fog_scalar_min);
     ice_shader.set_float("fog_scalar_max", fog_scalar_max);
+    ice_shader.set_float("brightness", brightness);
 }
 
 
@@ -600,24 +642,24 @@ void App::load_models()
     /********************************/
     /*        Load Submarine        */
     /********************************/
-    ship = std::make_shared<Player>("../../res/vehicles/submarine/sub3/sub_v03.obj", pos, rot, 0.2f, glm::vec3(18.0f, 2.0f, 2.0f));
+    ship = std::make_shared<Player>("res/vehicles/submarine/sub3/sub_v03.obj", pos, rot, 0.2f, glm::vec3(18.0f, 2.0f, 2.0f));
 
     /******************************/
     /*        Load Torpedo        */
     /******************************/
-    torpedo = std::make_shared<Object>("../../res/vehicles/torpedo/torpedo.obj", pos, rot, 0.2f, glm::vec3(2.0f, 0.8f, 0.8f));
+    torpedo = std::make_shared<Object>("res/vehicles/torpedo/torpedo.obj", pos, rot, 0.2f, glm::vec3(2.0f, 0.8f, 0.8f));
 
     /*********************************/
     /*        Load Debug Cube        */
     /*********************************/
     glm::vec3 tmp = glm::vec3(0.0f, 0.0f, 0.0f);
-    debug_cube = std::make_shared<Object>("../../res/environments/backgrounds/ocean/cube.obj", tmp, rot, 1.0f, glm::vec3(20.0f));
+    debug_cube = std::make_shared<Object>("res/environments/backgrounds/ocean/cube.obj", tmp, rot, 1.0f, glm::vec3(20.0f));
 
     /*******************************/
     /*        Load Backdrop        */
     /*******************************/
     pos.z = -100.0f;
-    background = std::make_shared<Object>("../../res/environments/backgrounds/ocean/long_quad_25d.obj", pos, rot, 1.0f);
+    background = std::make_shared<Object>("res/environments/backgrounds/ocean/long_quad_25d.obj", pos, rot, 1.0f);
 
     /************************************/
     /*        Load Ocean Surface        */
@@ -625,7 +667,7 @@ void App::load_models()
     pos.x = 0.0f;
     pos.y = 25.0f;
     pos.z = 0.0f;
-    ocean_surface = std::make_shared<Object>("../../res/environments/backgrounds/ocean/surface.obj", pos, rot, 1.0);
+    ocean_surface = std::make_shared<Object>("res/environments/backgrounds/ocean/surface.obj", pos, rot, 1.0);
 
     /**********************************/
     /*        Load Ocean Floor        */
@@ -634,7 +676,7 @@ void App::load_models()
     pos.x = 180.0f;
     pos.y = -45.0f;
     pos.z = -60.0f;
-    ocean_floor = std::make_shared<Object>("../../res/environments/objects/ice/undersea_mountains_01.obj", pos, rot, 30.0);
+    ocean_floor = std::make_shared<Object>("res/environments/objects/ice/undersea_mountains_01.obj", pos, rot, 30.0);
 
     /*******************************/
     /*        Load Icebergs        */
@@ -642,16 +684,16 @@ void App::load_models()
     std::vector<glm::vec3> collider_scales;
     collider_scales.push_back(glm::vec3(23.0f));
     collider_scales.push_back(glm::vec3(12.0f,  56.0f, 2.0f));
-    collider_scales.push_back(glm::vec3(30.0f,  58.0f, 2.0f));
+    collider_scales.push_back(glm::vec3(24.0f,  58.0f, 2.0f));
     collider_scales.push_back(glm::vec3(20.0f,  38.0f, 2.0f));
     collider_scales.push_back(glm::vec3( 9.0f, 158.0f, 2.0f));
     collider_scales.push_back(glm::vec3(25.0f,  55.0f, 2.0f));
     collider_scales.push_back(glm::vec3( 8.0f, 110.0f, 2.0f));
     collider_scales.push_back(glm::vec3(24.0f,  50.0f, 2.0f));
-    iceberg_start_positions = load_position_data("../../res/environments/objects/iceberg_positions_v08.txt");
+    iceberg_start_positions = load_position_data("res/environments/objects/iceberg_positions_v08.txt");
     for (int i = 0; i < iceberg_start_positions.size() - 1; i++)
     {
-        std::string path = "../../res/environments/objects/ice/iceberg_0" + std::to_string(i + 1) + ".obj";
+        std::string path = "res/environments/objects/ice/iceberg_0" + std::to_string(i + 1) + ".obj";
         icebergs.push_back(std::make_shared<Object>(path, iceberg_start_positions[i], rot, 10.0, collider_scales[i]));
     }
 
@@ -659,9 +701,8 @@ void App::load_models()
     /****************************/
     /*        Load Mines        */
     /****************************/
-    mine_start_positions = load_position_data("../../res/environments/objects/mine_positions_v01.txt");
-    std::cout << "N mines: " << mine_start_positions.size() << std::endl;
-    mine = std::make_shared<Object>("../../res/environments/objects/mines/naval_mine_v02.obj", glm::vec3(0.0f), rot, 0.7);
+    mine_start_positions = load_position_data("res/environments/objects/mine_positions_v03.txt");
+    mine = std::make_shared<Object>("res/environments/objects/mines/naval_mine_v02.obj", glm::vec3(0.0f), rot, 0.7);
     for (int i = 0; i < mine_start_positions.size(); i++)
     {
         mines.push_back(Pos_Vel_Rot(mine_start_positions[i]));
@@ -671,7 +712,7 @@ void App::load_models()
     /***************************/
     /*        Load Base        */
     /***************************/
-    std::string path = "../../res/environments/objects/ice/base.obj";
+    std::string path = "res/environments/objects/ice/base.obj";
     int index = iceberg_start_positions.size() - 1;
     base_start_position = iceberg_start_positions[index];
     base = std::make_shared<Object>(path, base_start_position, rot, 10.0);
@@ -781,7 +822,7 @@ void App::process_input()
     else
         SPEED_SCALAR = 1.0f;
 
-    if (DEBUG)
+    if (DEBUG && false)
     {
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
             camera.process_keyboard(Camera_Movement::UP, delta_time);
@@ -825,7 +866,7 @@ void App::process_input()
         {
             glm::vec3 start_pos = ship->pos;
             start_pos.y -= 1.0f;
-            glm::vec3 start_vel = glm::vec3(0.05f, -0.1f, 0.0f);
+            glm::vec3 start_vel = glm::vec3(0.05f, -0.08f, 0.0f);
             start_vel.y += ship->vel.y;
 
             torpedos.push_back(Pos_Vel_Rot(start_pos, start_vel, 0.0f, false));
@@ -882,10 +923,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (key == GLFW_KEY_P && action == GLFW_PRESS)
     {
         DEBUG = !DEBUG;
-        camera.debug = !camera.debug;
+        //camera.debug = !camera.debug;
     }
 
-    if (state == Game_State::MENU && key == GLFW_KEY_ENTER && action == GLFW_PRESS)
+    if (state == Game_State::MENU && key == GLFW_KEY_SPACE && action == GLFW_PRESS)
     {
         state = Game_State::RUNNING;
     }

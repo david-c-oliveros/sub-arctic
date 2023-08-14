@@ -47,6 +47,7 @@ uniform vec3 view_pos;
 uniform vec3 fog_color;
 uniform float fog_scalar_min;
 uniform float fog_scalar_max;
+uniform float brightness;
 
 uniform bool debug;
 uniform bool is_bg;
@@ -61,7 +62,7 @@ in vec2 tex_coords;
 #define    FOG_MIN  10.0
 #define    FOG_MAX 180.0
 #define BG_FOG_MIN  10.0
-#define BG_FOG_MAX  100.0
+#define BG_FOG_MAX  110.0
 
 
 vec3 calc_dir_light(Dir_Light light, vec3 normal, vec3 view_dir, vec3 noise);
@@ -86,12 +87,6 @@ void main()
     vec3 result = calc_dir_light(dir_light, norm, view_dir, noise);
 //    result += calc_spot_light(spot_light, norm, frag_world, view_dir, noise);
 
-//    if (debug)
-//    {
-//        frag_color = vec4(result, 1.0);
-//        return;
-//    }
-
 
     /*************************/
     /*        Add Fog        */
@@ -100,6 +95,8 @@ void main()
     float d = distance(camera_eye, vec4(frag_world, 1.0));
     float alpha = fog_factor(d);
     result = mix(result, fog_color, alpha);
+
+    result *= brightness;
 
     if (is_bg)
     {

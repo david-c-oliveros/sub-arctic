@@ -7,6 +7,7 @@ uniform vec2 u_mouse;
 uniform float u_time;
 uniform vec3 view_pos;
 uniform vec3 fog_color;
+uniform float brightness;
 
 in vec3 frag_pos;
 in vec3 frag_world;
@@ -34,6 +35,8 @@ void main()
     float alpha = fog_factor(d);
 
     result = mix(result, fog_color, alpha);
+
+    result *= brightness;
 
     frag_color = vec4(result, 1.0);
 }

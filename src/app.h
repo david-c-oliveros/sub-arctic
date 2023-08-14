@@ -5,7 +5,8 @@
 #include <math.h>
 #include <memory>
 
-#include <GL/glew.h>
+#include <glad.h>
+//#include <GL/glew.h>
 #include <GLFW/glfw3.h> /* https://github.com/glfw/glfw */
 
 #include "gltext.h" /* https://github.com/vallentin/glText */
@@ -29,6 +30,7 @@
 
 #define GRAVITY -0.001f
 #define FRICTION 0.99f
+#define THRUST   0.01f;
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -80,7 +82,9 @@ struct Pos_Vel_Rot
             if (abs(vel.y) < 0.03f)
                 vel.y += GRAVITY;
 
-            std::cout << "vel: " << glm::to_string(vel) << std::endl;
+            if (abs(vel.x < 0.05f))
+                vel.x += THRUST;
+
             vel *= FRICTION;
             pos += vel;
             rot_angle = glm::mix(rot_angle, -25.0f, delta_time * 0.2f);
@@ -102,7 +106,8 @@ class App
         void render_text(const char* str,
                          glm::vec2 pos = glm::vec3(1.0f),
                          glm::vec3 color = glm::vec3(1.0f),
-                         float scale = 1.0f);
+                         float scale = 1.0f,
+                         bool aligned = true);
         bool gl_config();
         void load_shaders();
         void init_framebuffer();
@@ -122,6 +127,7 @@ class App
 
         const float fog_scalar_min = 1.0f;
         const float fog_scalar_max = 1.0f;
+        const float brightness = 1.8f;
 
         Shader text_shader;
         Shader shader;

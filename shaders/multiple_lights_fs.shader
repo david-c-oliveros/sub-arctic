@@ -63,8 +63,8 @@ uniform vec3 fog_color;
 uniform Material material;
 uniform vec3 view_pos;
 uniform Dir_Light dir_light;
-//uniform Point_Light point_lights[NR_POINT_LIGHTS];
 uniform Spot_Light spot_light;
+uniform float brightness;
 
 
 vec3 calc_dir_light(Dir_Light light, vec3 normal, vec3 view_dir);
@@ -81,13 +81,15 @@ void main()
     // Phase 1: Directional Lighting
     vec3 result = calc_dir_light(dir_light, norm, view_dir);
 //    result += calc_spot_light(spot_light, norm, frag_pos, view_dir);
-    result += vec3(0.0, 0.05, 0.1);
+    result += vec3(0.0, 0.05, 0.07);
 
     vec4 camera_eye = vec4(view_pos, 1.0);
     float d = distance(camera_eye, vec4(frag_pos, 1.0));
     float alpha = fog_factor(d);
 
     result = mix(result, fog_color, alpha);
+
+    result *= brightness;
 
     frag_color = vec4(result, 1.0);
 }
