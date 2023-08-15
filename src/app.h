@@ -26,11 +26,12 @@
 #include "player.h"
 #include "box_collider.h"
 #include "timer.h"
+#include "particle_system.h"
 
 
 #define GRAVITY -0.001f
 #define FRICTION 0.99f
-#define THRUST   0.01f;
+#define THRUST   0.01f
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -127,15 +128,18 @@ class App
 
         const float fog_scalar_min = 1.0f;
         const float fog_scalar_max = 1.0f;
+        glm::vec3 fog_color = glm::vec3(0.0f, 0.01f, 0.1f);
         const float brightness = 1.8f;
 
         Shader text_shader;
         Shader shader;
         Shader bg_shader;
         Shader ice_shader;
+        Shader particle_shader;
         Shader debug_shader;
 
         std::shared_ptr<Player> ship;
+        std::shared_ptr<Particle_System> ship_bubbles_ps;
         std::shared_ptr<Object> torpedo;
         std::vector<Pos_Vel_Rot> torpedos;
         std::shared_ptr<Object> mine;

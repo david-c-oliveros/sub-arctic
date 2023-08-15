@@ -28,6 +28,8 @@ add_executable(${PROJECT_NAME}
     src/player.cpp
     src/timer.cpp
     src/box_collider.cpp
+    src/particle_system.cpp
+    src/particle.cpp
     )
 
 add_subdirectory(external/glfw)

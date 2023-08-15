@@ -53,6 +53,9 @@ bool App::create()
 
 void App::run()
 {
+    /***********************************/
+    /*        Init Audio Engine        */
+    /***********************************/
     ma_init_result = ma_engine_init(NULL, &audio_engine);
     if (ma_init_result != MA_SUCCESS)
         std::cout << "ERROR::MINIAUDIO\n";
@@ -60,6 +63,13 @@ void App::run()
     ma_init_result = ma_sound_init_from_file(&audio_engine, music, 0, NULL, NULL, &bg_music);
     if (ma_init_result != MA_SUCCESS)
         std::cout << "ERROR::MINIAUDIO\n";
+
+
+    /***************************************/
+    /*        Init Particle Systems        */
+    /***************************************/
+    ship_bubbles_ps = std::make_shared<Particle_System>(1000, 0.2f);
+
 
     ma_sound_set_looping(&bg_music, true);
     ma_sound_start(&bg_music);
@@ -167,6 +177,11 @@ void App::update()
                 /*********************************************/
                 test_for_torpedo_hit();
 
+                for (auto &t : torpedos)
+                {
+                    torpedo->collider->update_pos(t.pos);
+                }
+
 
                 if (base->pos.x <= 0.0f)
                     state = Game_State::WIN;
@@ -212,6 +227,12 @@ void App::update()
     /*        Update Objects        */
     /*                              */
     /********************************/
+    /*****************************************/
+    /*        Update Particle Systems        */
+    /*****************************************/
+    ship_bubbles_ps->update(delta_time, ship, 1, glm::vec2(-10.0f, 0.0f));
+
+
     /*****************************/
     /*        Update Ship        */
     /*****************************/
@@ -261,7 +282,7 @@ void App::render()
     if (DEBUG)
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     else
-        glClearColor(0.0f, 0.01f, 0.1f, 1.0f);
+        glClearColor(0.0f, 0.01f, 0.18f, 1.0f);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -297,6 +318,10 @@ void App::render()
     debug_shader.use();
     debug_shader.set_mat4("projection", projection);
     debug_shader.set_mat4("view", view);
+
+    particle_shader.use();
+    particle_shader.set_mat4("projection", projection);
+    particle_shader.set_mat4("view", view);
 
 
     /**********************/
@@ -360,11 +385,19 @@ void App::render()
     /***************************/
     shader.use();
     ship->draw(shader);
-    if (DEBUG)
-    {
-        debug_shader.use();
-        ship->collider->draw(debug_shader);
-    }
+//    if (DEBUG)
+//    {
+//        debug_shader.use();
+//        ship->collider->draw(debug_shader);
+//    }
+
+
+    /********************************/
+    /*        Draw Particles        */
+    /********************************/
+    particle_shader.use();
+
+    ship_bubbles_ps->draw(particle_shader);
 
 
     /*********************************/
@@ -534,8 +567,6 @@ bool App::gl_config()
 /******************************/
 void App::load_shaders()
 {
-    glm::vec3 fog_color = glm::vec3(0.0f, 0.01f, 0.1f);
-
     shader.create("shaders/multiple_lights_vs.shader", "shaders/multiple_lights_fs.shader");
     shader.use();
     shader.set_vec3("dir_light.direction", glm::vec3(0.5f, -0.5f, 0.7f));
@@ -589,6 +620,9 @@ void App::load_shaders()
     ice_shader.set_float("fog_scalar_min", fog_scalar_min);
     ice_shader.set_float("fog_scalar_max", fog_scalar_max);
     ice_shader.set_float("brightness", brightness);
+
+
+    particle_shader.create("shaders/particle_vs.shader", "shaders/particle_fs.shader");
 }
 
 
@@ -734,6 +768,9 @@ void App::test_for_torpedo_hit()
         torpedo->collider->update_pos(collider_pos);
         std::vector<Pos_Vel_Rot>::iterator m_it;
 
+        /**********************************/
+        /*        Torpedo and Mine        */
+        /**********************************/
         for (auto m_it = mines.begin(); m_it != mines.end();)
         {
             mine->collider->update_pos(m_it->pos);
@@ -742,14 +779,26 @@ void App::test_for_torpedo_hit()
                 m_it++;
                 continue;
             }
+            player_score += 8;
             hit = true;
             mines.erase(m_it);
             break;
         }
 
+        /*************************************/
+        /*        Torpedo and Iceberg        */
+        /*************************************/
+        for (auto &iceberg : icebergs)
+        {
+            if (!Box_Collider::aabb_collide(torpedo->collider, iceberg->collider))
+                continue;
+
+            hit = true;
+            break;
+        }
+
         if (hit)
         {
-            player_score += 8;
             torpedos.erase(t_it);
         }
         else
@@ -764,6 +813,8 @@ void App::test_for_torpedo_hit()
 void App::restart_game()
 {
     ocean_floor->pos = ocean_floor_start_position;
+    ship->pos = glm::vec3(0.0f);
+    player_score = 0;
 
     for (int i = 0; i < iceberg_start_positions.size() - 1; i++)
     {
@@ -822,7 +873,7 @@ void App::process_input()
     else
         SPEED_SCALAR = 1.0f;
 
-    if (DEBUG && false)
+    if (DEBUG)
     {
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
             camera.process_keyboard(Camera_Movement::UP, delta_time);
@@ -867,9 +918,10 @@ void App::process_input()
             glm::vec3 start_pos = ship->pos;
             start_pos.y -= 1.0f;
             glm::vec3 start_vel = glm::vec3(0.05f, -0.08f, 0.0f);
+            float start_rot = ship->rot_angle;
             start_vel.y += ship->vel.y;
 
-            torpedos.push_back(Pos_Vel_Rot(start_pos, start_vel, 0.0f, false));
+            torpedos.push_back(Pos_Vel_Rot(start_pos, start_vel, start_rot, false));
             torpedo_cooldown_timer.start();
             torpedo_charged = false;
         }
@@ -923,7 +975,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (key == GLFW_KEY_P && action == GLFW_PRESS)
     {
         DEBUG = !DEBUG;
-        //camera.debug = !camera.debug;
+        camera.debug = !camera.debug;
     }
 
     if (state == Game_State::MENU && key == GLFW_KEY_SPACE && action == GLFW_PRESS)
