@@ -68,7 +68,7 @@ void App::run()
     /***************************************/
     /*        Init Particle Systems        */
     /***************************************/
-    ship_bubbles_ps = std::make_shared<Particle_System>(1000, 0.2f);
+    ship_bubbles_ps = std::make_shared<Particle_System>(1000, 0.07f);
 
 
     ma_sound_set_looping(&bg_music, true);
@@ -227,16 +227,20 @@ void App::update()
     /*        Update Objects        */
     /*                              */
     /********************************/
-    /*****************************************/
-    /*        Update Particle Systems        */
-    /*****************************************/
-    ship_bubbles_ps->update(delta_time, ship, 1, glm::vec2(-10.0f, 0.0f));
-
-
     /*****************************/
     /*        Update Ship        */
     /*****************************/
     ship->update(delta_time);
+
+
+    /*****************************************/
+    /*        Update Particle Systems        */
+    /*****************************************/
+    if (state == Game_State::RUNNING)
+    {
+        glm::vec2 offset = glm::vec2(-10.0f, -sin(glm::radians(ship->rot_angle)) * 10.0f);
+        ship_bubbles_ps->update(delta_time, ship, 1, offset);
+    }
 
 
     /*********************************/

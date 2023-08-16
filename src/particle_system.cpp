@@ -31,7 +31,8 @@ void Particle_System::update(float delta_time, std::shared_ptr<Object> object, i
         p.life -= delta_time;
         if (p.life > 0.0f)
         {
-            p.pos -= p.vel * delta_time + glm::vec2(0.0f, -0.1f);
+            std::cout << "\r" << glm::to_string(p.vel) << std::flush;
+            p.pos -= p.vel * delta_time + glm::vec2(p.life * 0.01, -0.1f);
             p.color.x -= delta_time * 0.3f;
             p.color.y -= delta_time * 0.3f;
             p.color.z -= delta_time * 0.3f;
@@ -108,11 +109,10 @@ int Particle_System::first_unused_particle()
 void Particle_System::respawn_particle(Particle &particle, std::shared_ptr<Object> object, glm::vec2 offset)
 {
     //float random = ((std::rand() % 100) - 50) / 10.0f;
-    glm::vec2 random = glm::diskRand(0.5f);
-    //float r_color = 0.5f + ((std::rand() % 100) / 100.0f);
-    float r_color = 1.0f;
+    glm::vec2 random = glm::diskRand(0.4f);
+    float r_color = 0.5f + ((std::rand() % 100) / 100.0f);
     particle.pos = glm::vec2(object->pos.x, object->pos.y) + random + offset;
-    particle.color = glm::vec4(r_color, r_color, r_color, 1.0f);
+    particle.color = glm::vec4(r_color, r_color, r_color, r_color) * 0.5f;
     particle.life = 3.0f;
     particle.vel = glm::vec2(object->vel.x, object->vel.y) * 0.1f;
 }
